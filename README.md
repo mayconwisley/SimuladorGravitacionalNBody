@@ -64,7 +64,8 @@ O diretório de saída terá:
 
 O CSV inclui o estado inicial, estados a cada `sampleEverySteps` e o estado
 final, mesmo quando o último intervalo é menor. A saída é escrita
-sequencialmente; só o estado atual e uma amostra ficam na memória.
+sequencialmente; o uso de memória cresce com o número de corpos, não com o
+número de amostras.
 
 Formato do cenário:
 

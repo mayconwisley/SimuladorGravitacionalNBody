@@ -4,14 +4,15 @@
 
 OrbitalSim is an N-body simulator. Keep numerical physics in `native/src/` and
 its stable C ABI in `native/src/orbital_c_api.f90` and
-`native/include/orbitalsim.h`. Native tests live in `tests/native/`. Future .NET
-10 projects live in `src/` (Domain, Application, Infrastructure.Fortran,
-CLI), with an optional API and React app to be added later. Do not introduce UI or file I/O
-into the Fortran motor. Update `README.md` when the layout or workflow changes.
+`native/include/orbitalsim.h`. Native tests live in `tests/native/`. The .NET
+10 projects live in `src/` (Domain, Application, Infrastructure.Fortran, CLI).
+An API and React app remain optional. Do not introduce UI or file I/O into the
+Fortran motor. Update `README.md` when the layout or workflow changes.
 
 ## Build and test
 
-From the repository root, with CMake 3.20+, Ninja, and a Fortran 2008 compiler:
+From the repository root, with CMake 3.20+, Ninja, and a Fortran 2008 compiler,
+the following commands build and test the native motor:
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
