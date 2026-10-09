@@ -426,3 +426,11 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# OrbitalSim generated files
+/build/
+/output/
+/benchmarks/results.csv
+/web/dist/
+*.mod
+*.smod

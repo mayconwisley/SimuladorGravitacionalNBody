@@ -5,9 +5,11 @@
 OrbitalSim is an N-body simulator. Keep numerical physics in `native/src/` and
 its stable C ABI in `native/src/orbital_c_api.f90` and
 `native/include/orbitalsim.h`. Native tests live in `tests/native/`. The .NET
-10 projects live in `src/` (Domain, Application, Infrastructure.Fortran, CLI).
-An API and React app remain optional. Do not introduce UI or file I/O into the
-Fortran motor. Update `README.md` when the layout or workflow changes.
+10 projects live in `src/` (Domain, Application, Infrastructure.Fortran, CLI,
+API). The React/Vite interface lives in `web/`. Keep request parsing in the
+API, scenario validation in Domain, and numerical work in Fortran. Do not
+introduce UI or file I/O into the Fortran motor. Update `README.md` when the
+layout or workflow changes.
 
 ## Build and test
 
@@ -15,9 +17,9 @@ From the repository root, with CMake 3.20+, Ninja, and a Fortran 2008 compiler,
 the following commands build and test the native motor:
 
 ```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-ctest --test-dir build --output-on-failure
+cmake -S . -B build/cmake -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build/cmake
+ctest --test-dir build/cmake --output-on-failure
 ```
 
 On Windows, use the MSYS2 UCRT64 shell and the prerequisite installation
@@ -29,10 +31,16 @@ native test executable, runs it, and creates `build/tdm-gcc/orbitalsim.dll`.
 the .NET 10 solution and runs the integration test executable. The CLI is run
 with `dotnet run --project src/OrbitalSim.Cli -c Release --no-build -- run
 examples/earth-satellite.json --out output/earth-satellite`.
+Use `powershell -ExecutionPolicy Bypass -File .\scripts\start-web.ps1` to build
+and run the local React app and API. Run `npm test --prefix web` to check form
+and CSV parsing, and `powershell -ExecutionPolicy Bypass -File
+.\scripts\smoke-api.ps1` after building Release to check HTTP execution. CI
+runs native, .NET integration, example, web, and API checks on Linux.
 
 Do not report these commands as passing unless they were run successfully.
 If the toolchain is unavailable, state that explicitly and keep test sources
-reviewable. Do not commit generated `build/` contents.
+reviewable. Do not commit generated `build/`, `output/`, `web/dist/`, or
+benchmark result contents.
 
 ## Numerical rules
 

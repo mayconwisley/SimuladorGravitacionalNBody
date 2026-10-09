@@ -18,21 +18,26 @@ internal static class Program
             switch (args[0])
             {
                 case "run":
-                    if (args.Length < 2) throw new ArgumentException("Provide a scenario JSON file.");
-                    string output = Option(args, "--out") ?? "output";
+                    if (args.Length < 2 || args[1].StartsWith("--", StringComparison.Ordinal))
+                        throw new ArgumentException("Provide a scenario JSON file.");
+                    var runOptions = ParseOptions(args, 2, "--out");
+                    string output = runOptions.GetValueOrDefault("--out") ?? "output";
                     var scenario = ScenarioFile.Load(args[1]);
                     CsvOutput.Write(output,
                         new SimulationRunner(new FortranOrbitEngine()).Run(scenario));
                     Console.WriteLine($"Completed {scenario.Config.Steps} steps; results in {Path.GetFullPath(output)}");
                     return 0;
                 case "benchmark":
-                    int[] bodies = (Option(args, "--bodies") ?? "2,100,1000")
+                    var benchmarkOptions = ParseOptions(args, 1,
+                        "--bodies", "--steps", "--repeats", "--batch", "--out");
+                    int[] bodies = (benchmarkOptions.GetValueOrDefault("--bodies") ?? "2,100,1000")
                         .Split(',', StringSplitOptions.RemoveEmptyEntries)
                         .Select(s => int.Parse(s, CultureInfo.InvariantCulture)).ToArray();
-                    int steps = int.Parse(Option(args, "--steps") ?? "100", CultureInfo.InvariantCulture);
-                    int repeats = int.Parse(Option(args, "--repeats") ?? "3", CultureInfo.InvariantCulture);
-                    int batch = int.Parse(Option(args, "--batch") ?? "10", CultureInfo.InvariantCulture);
-                    BenchmarkCommand.Run(bodies, steps, repeats, batch, Option(args, "--out"));
+                    int steps = int.Parse(benchmarkOptions.GetValueOrDefault("--steps") ?? "100", CultureInfo.InvariantCulture);
+                    int repeats = int.Parse(benchmarkOptions.GetValueOrDefault("--repeats") ?? "3", CultureInfo.InvariantCulture);
+                    int batch = int.Parse(benchmarkOptions.GetValueOrDefault("--batch") ?? "10", CultureInfo.InvariantCulture);
+                    BenchmarkCommand.Run(bodies, steps, repeats, batch,
+                        benchmarkOptions.GetValueOrDefault("--out"));
                     return 0;
                 default:
                     throw new ArgumentException($"Unknown command: {args[0]}");
@@ -45,16 +50,22 @@ internal static class Program
         }
     }
 
-    private static string? Option(string[] args, string name)
+    private static Dictionary<string, string> ParseOptions(string[] args, int first,
+        params string[] allowed)
     {
-        for (int i = 0; i < args.Length; i++)
+        var options = new Dictionary<string, string>(StringComparer.Ordinal);
+        for (int i = first; i < args.Length; i += 2)
         {
-            if (args[i] != name) continue;
-            if (i + 1 >= args.Length || args[i + 1].StartsWith("--", StringComparison.Ordinal))
+            string name = args[i];
+            if (!allowed.Contains(name, StringComparer.Ordinal))
+                throw new ArgumentException($"Unknown option: {name}.");
+            if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]) ||
+                args[i + 1].StartsWith("--", StringComparison.Ordinal))
                 throw new ArgumentException($"Missing value for {name}.");
-            return args[i + 1];
+            if (!options.TryAdd(name, args[i + 1]))
+                throw new ArgumentException($"Option repeated: {name}.");
         }
-        return null;
+        return options;
     }
 
     private static void Help()

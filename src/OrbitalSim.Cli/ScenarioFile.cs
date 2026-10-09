@@ -10,7 +10,7 @@ internal sealed class ScenarioFile
     public double TimeStepSeconds { get; set; }
     public int Steps { get; set; }
     public int SampleEverySteps { get; set; }
-    public List<BodyFile> Bodies { get; set; } = [];
+    public List<BodyFile?>? Bodies { get; set; } = [];
 
     public static SimulationScenario Load(string path)
     {
@@ -18,9 +18,13 @@ internal sealed class ScenarioFile
         var document = JsonSerializer.Deserialize<ScenarioFile>(stream,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             ?? throw new ArgumentException("Scenario JSON is empty.");
+        if (document.Bodies is null)
+            throw new ArgumentException("Scenario must contain a bodies array.");
         var bodies = new List<BodyDefinition>(document.Bodies.Count);
-        foreach (BodyFile body in document.Bodies)
+        foreach (BodyFile? body in document.Bodies)
         {
+            if (body is null)
+                throw new ArgumentException("Scenario contains a null body.");
             if (body.PositionMeters is not { Length: 3 } ||
                 body.VelocityMetersPerSecond is not { Length: 3 })
                 throw new ArgumentException("Each body requires three position and velocity values.");

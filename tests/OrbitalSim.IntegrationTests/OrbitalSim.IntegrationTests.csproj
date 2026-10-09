@@ -13,14 +13,14 @@
     <None Include="../../build/tdm-gcc/orbitalsim.dll" Link="orbitalsim.dll"
           CopyToOutputDirectory="PreserveNewest"
           Condition="Exists('../../build/tdm-gcc/orbitalsim.dll')" />
-    <None Include="../../build/orbitalsim.dll" Link="orbitalsim.dll"
+    <None Include="../../build/cmake/orbitalsim.dll" Link="orbitalsim.dll"
           CopyToOutputDirectory="PreserveNewest"
-          Condition="!Exists('../../build/tdm-gcc/orbitalsim.dll') And Exists('../../build/orbitalsim.dll')" />
-    <None Include="../../build/liborbitalsim.so" Link="liborbitalsim.so"
+          Condition="!Exists('../../build/tdm-gcc/orbitalsim.dll') And Exists('../../build/cmake/orbitalsim.dll')" />
+    <None Include="../../build/cmake/liborbitalsim.so" Link="liborbitalsim.so"
           CopyToOutputDirectory="PreserveNewest"
-          Condition="Exists('../../build/liborbitalsim.so')" />
-    <None Include="../../build/liborbitalsim.dylib" Link="liborbitalsim.dylib"
+          Condition="Exists('../../build/cmake/liborbitalsim.so')" />
+    <None Include="../../build/cmake/liborbitalsim.dylib" Link="liborbitalsim.dylib"
           CopyToOutputDirectory="PreserveNewest"
-          Condition="Exists('../../build/liborbitalsim.dylib')" />
+          Condition="Exists('../../build/cmake/liborbitalsim.dylib')" />
   </ItemGroup>
 </Project>

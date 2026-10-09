@@ -35,8 +35,8 @@ public sealed class SimulationRunner(IOrbitEngine engine)
         scenario.Validate();
         int count = scenario.Bodies.Count;
         var masses = new double[count];
-        var positions = new double[3 * count];
-        var velocities = new double[3 * count];
+        var positions = new double[checked(3 * count)];
+        var velocities = new double[checked(3 * count)];
         for (int i = 0; i < count; i++)
         {
             BodyDefinition body = scenario.Bodies[i];

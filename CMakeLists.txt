@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 project(OrbitalSim VERSION 0.1.0 LANGUAGES Fortran)
 
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/modules")
+
 add_library(orbitalsim SHARED
     native/src/orbital_forces.f90
     native/src/orbital_verlet.f90
