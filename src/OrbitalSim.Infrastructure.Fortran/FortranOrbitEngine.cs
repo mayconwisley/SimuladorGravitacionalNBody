@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using OrbitalSim.Application.DTOs;
 using OrbitalSim.Application.Interfaces;
 using OrbitalSim.Domain;
@@ -49,6 +47,124 @@ public sealed class FortranOrbitEngine : IOrbitEngine
             new Vector3d(angular[0], angular[1], angular[2]));
     }
 
+    public unsafe AdvanceResult Advance(EngineState state, double timeStepSeconds, double gravity,
+        double softeningMeters, int steps, EngineOptions options, int eventCapacity)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (steps < 1 || eventCapacity < 0)
+            throw new ArgumentException("Steps must be positive and the event capacity nonnegative.");
+        NativeOptions native = ToNative(options);
+        NativeReport report = default;
+        var events = new NativeEvent[eventCapacity];
+        fixed (double* mass = state.Masses, radius = state.Radii, drag = state.DragAreaPerMass,
+               pos = state.Positions, vel = state.Velocities, acc = state.Accelerations)
+        fixed (int* active = state.Active)
+        fixed (NativeEvent* buffer = events)
+        {
+            int status = NativeMethods.Advance(state.Count, mass, radius, drag, active, pos, vel, acc,
+                state.AccelerationsReady ? 1 : 0, timeStepSeconds, gravity, softeningMeters, steps,
+                &native, &report, eventCapacity > 0 ? buffer : null, eventCapacity);
+            ThrowOnError(status);
+        }
+        state.AccelerationsReady = true;
+        var found = new EngineEvent[report.EventCount];
+        for (int i = 0; i < found.Length; i++)
+        {
+            NativeEvent item = events[i];
+            found[i] = new EngineEvent((SimulationEventKind)item.Kind, item.Step, item.Body,
+                item.Other, item.DistanceMeters);
+        }
+        return new AdvanceResult(new EngineReport(
+            OrNull(report.MinSeparationMeters), OrNull(report.MinDynamicalTimeSeconds),
+            OrNull(report.SuggestedTimeStepSeconds), OrNull(report.MassiveSuggestedTimeStepSeconds),
+            report.Collisions, report.EventsDropped), found);
+    }
+
+    public unsafe DiagnosticValues GetEnergy(EngineState state, double gravity, double softeningMeters,
+        EngineOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        NativeOptions native = ToNative(options);
+        double kinetic = 0, potential = 0;
+        var momentum = new double[3];
+        var angular = new double[3];
+        fixed (double* mass = state.Masses, pos = state.Positions, vel = state.Velocities,
+               p = momentum, l = angular)
+        fixed (int* active = state.Active)
+        {
+            int status = NativeMethods.Energy(state.Count, mass, active, pos, vel, gravity,
+                softeningMeters, &native, &kinetic, &potential, p, l);
+            ThrowOnError(status);
+        }
+        return new DiagnosticValues(kinetic + potential,
+            new Vector3d(momentum[0], momentum[1], momentum[2]),
+            new Vector3d(angular[0], angular[1], angular[2]), kinetic, potential);
+    }
+
+    public unsafe OrbitalElements?[] GetOrbitalElements(EngineState state, double gravity, int referenceIndex)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        var native = new NativeElements[state.Count];
+        var valid = new int[state.Count];
+        fixed (double* mass = state.Masses, pos = state.Positions, vel = state.Velocities)
+        fixed (int* active = state.Active, isValid = valid)
+        fixed (NativeElements* elements = native)
+        {
+            int status = NativeMethods.OrbitalElements(state.Count, mass, active, pos, vel, gravity,
+                referenceIndex, elements, isValid);
+            ThrowOnError(status);
+        }
+        var result = new OrbitalElements?[state.Count];
+        for (int i = 0; i < result.Length; i++)
+            if (valid[i] != 0) result[i] = FromNative(native[i]);
+        return result;
+    }
+
+    public unsafe StateVector ElementsToState(double gravity, double centralMassKg, double bodyMassKg,
+        OrbitalElements elements)
+    {
+        NativeElements native = ToNative(elements);
+        var position = new double[3];
+        var velocity = new double[3];
+        fixed (double* pos = position, vel = velocity)
+        {
+            int status = NativeMethods.ElementsToState(gravity, centralMassKg, bodyMassKg, &native, pos, vel);
+            ThrowOnError(status);
+        }
+        return new StateVector(new Vector3d(position[0], position[1], position[2]),
+            new Vector3d(velocity[0], velocity[1], velocity[2]));
+    }
+
+    private static NativeOptions ToNative(EngineOptions options) => new()
+    {
+        Integrator = (int)options.Integrator,
+        CentralIndex = options.CentralIndex,
+        Collisions = options.Collisions ? 1 : 0,
+        J2 = options.J2,
+        CentralRadiusMeters = options.CentralRadiusMeters,
+        AtmosphereDensityKgPerCubicMeter = options.AtmosphereDensityKgPerCubicMeter,
+        AtmosphereScaleHeightMeters = options.AtmosphereScaleHeightMeters,
+        LightSpeedMetersPerSecond = options.LightSpeedMetersPerSecond
+    };
+
+    private static NativeElements ToNative(OrbitalElements elements) => new()
+    {
+        SemiMajorAxisMeters = elements.SemiMajorAxisMeters,
+        Eccentricity = elements.Eccentricity,
+        InclinationRadians = elements.InclinationRadians,
+        AscendingNodeRadians = elements.AscendingNodeRadians,
+        ArgumentOfPeriapsisRadians = elements.ArgumentOfPeriapsisRadians,
+        TrueAnomalyRadians = elements.TrueAnomalyRadians
+    };
+
+    private static OrbitalElements FromNative(NativeElements elements) => new(
+        elements.SemiMajorAxisMeters, elements.Eccentricity, elements.InclinationRadians,
+        elements.AscendingNodeRadians, elements.ArgumentOfPeriapsisRadians,
+        elements.TrueAnomalyRadians, elements.PeriodSeconds, elements.PeriapsisMeters,
+        elements.ApoapsisMeters, elements.SpecificEnergyJoulesPerKg);
+
+    private static double? OrNull(double value) => value < 0 ? null : value;
+
     private static void ValidateBuffers(int count, double[] masses,
         double[] positions, double[] velocities)
     {
@@ -72,18 +188,4 @@ public sealed class FortranOrbitEngine : IOrbitEngine
             _ => $"Fortran motor: unknown status {status}."
         });
     }
-}
-
-internal static unsafe partial class NativeMethods
-{
-    [LibraryImport("orbitalsim", EntryPoint = "os_step")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial int Step(int n, double* mass, double* pos, double* vel,
-        double dt, double grav, double eps, int steps);
-
-    [LibraryImport("orbitalsim", EntryPoint = "os_diagnostics")]
-    [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-    internal static partial int Diagnostics(int n, double* mass, double* pos,
-        double* vel, double grav, double eps, double* energy, double* momentum,
-        double* angularMomentum);
 }

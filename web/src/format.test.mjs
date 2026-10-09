@@ -29,3 +29,22 @@ test('durações curtas usam segundos com duas casas', () => {
   assert.equal(formatClock(3.25, 42.5), '03,25 s');
   assert.equal(formatClock(42.5, 42.5), '42,50 s');
 });
+
+test('tempo reverso mantém o sinal e a largura', () => {
+  const total = -6000;
+  const width = formatClock(0, total).length;
+  assert.equal(formatClock(0, total), '−00:00:00');
+  assert.equal(formatClock(-500, total), '−00:08:20');
+  for (let i = 0; i <= 50; i++) assert.equal(formatClock(total * i / 50, total).length, width);
+});
+
+test('escalas astronômicas usam anos, milhares, milhões ou bilhões de anos', () => {
+  const year = 365.25 * 86400;
+  const galaxy = 1.4e16;
+  assert.equal(clockUnit(galaxy), 'milhões de anos');
+  assert.equal(formatClock(0, galaxy), '000,00');
+  assert.equal(formatClock(galaxy, galaxy), '443,63');
+  for (let i = 0; i <= 50; i++) assert.equal(formatClock(galaxy * i / 50, galaxy).length, 6);
+  assert.equal(clockUnit(570 * year), 'anos');
+  assert.equal(clockUnit(365 * 86400), 'd h:min:s', 'um ano ainda em dias');
+});

@@ -25,14 +25,15 @@ internal static class Program
                         throw new ArgumentException("Provide a scenario JSON file.");
                     var runOptions = ParseOptions(args, 2, "--out");
                     string output = runOptions.GetValueOrDefault("--out") ?? "output";
-                    var scenario = ScenarioFile.Load(args[1]);
+                    var input = ScenarioFile.Load(args[1]);
                     using var services = new ServiceCollection()
                         .AddApplication()
                         .AddFortranInfrastructure()
                         .BuildServiceProvider();
-                    CsvOutput.Write(output,
-                        services.GetRequiredService<RunSimulationUseCase>().Execute(scenario));
-                    Console.WriteLine($"Completed {scenario.Config.Steps} steps; results in {Path.GetFullPath(output)}");
+                    var built = services.GetRequiredService<BuildScenarioUseCase>().Execute(input);
+                    CsvOutput.Write(output, built,
+                        services.GetRequiredService<RunSimulationUseCase>().Execute(built));
+                    Console.WriteLine($"Completed {built.Scenario.Config.Steps} steps; results in {Path.GetFullPath(output)}");
                     return 0;
                 }
                 case "benchmark":

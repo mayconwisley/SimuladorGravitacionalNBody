@@ -33,6 +33,16 @@ function binary(massA, massB, separationMeters) {
   ];
 }
 
+// A body given by Keplerian elements around an earlier body (meters and degrees).
+const orbit = (name, massKg, around, semiMajorAxisMeters, eccentricity = 0, angles = {}, extra = {}) => ({
+  name, massKg, ...extra,
+  orbit: { around, semiMajorAxisMeters, eccentricity, inclinationDegrees: angles.inclination ?? 0,
+    ascendingNodeDegrees: angles.node ?? 0, argumentOfPeriapsisDegrees: angles.argument ?? 0,
+    trueAnomalyDegrees: angles.anomaly ?? 0 }
+});
+
+// view: 'rotating' opens the result in the frame co-rotating with the two heaviest bodies;
+// compare: true runs the integrator comparison once the result is loaded.
 function preset(label, category, description, bodies, options = {}) {
   return {
     label, category, description, gravity: String(G),
@@ -40,9 +50,18 @@ function preset(label, category, description, bodies, options = {}) {
     timeStepSeconds: String(options.timeStepSeconds ?? 15),
     steps: String(options.steps ?? 2600),
     sampleEverySteps: String(options.sampleEverySteps ?? 13),
-    bodies
+    bodies,
+    ...(options.integrator && { integrator: options.integrator }),
+    ...(options.physics && { physics: options.physics }),
+    ...(options.particleGroups && { particleGroups: options.particleGroups }),
+    ...(options.maneuvers && { maneuvers: options.maneuvers }),
+    ...(options.view && { view: options.view }),
+    ...(options.compare && { compare: true })
   };
 }
+
+const sunMass = 1.98847e30;
+const earthRadius = 6.378137e6;
 
 const equalBinary = binary(1e23, 1e23, 4e6);
 const unequalBinary = binary(2e23, 5e22, 5e6);
@@ -132,7 +151,7 @@ export const presets = {
       center(), orbiter('Planeta', 1e19, 5e6),
       orbiter('Troiano L4', 1e10, 5e6, 60),
       orbiter('Troiano L5', 1e10, 5e6, -60)
-    ]),
+    ], { view: 'rotating' }),
   ringEight: preset('Anel de oito', 'Coleções',
     'Oito satélites leves e igualmente espaçados em uma órbita.', [
       center(), ...Array.from({ length: 8 }, (_, index) =>
@@ -181,5 +200,76 @@ export const presets = {
   hierarchicalTriple: preset('Sistema triplo hierárquico', 'Múltiplos',
     'Uma terceira estrela, mais leve e distante, orbita um par compacto.', [
       ...equalBinary, orbiter('Estrela C', 1e21, 2e7, 90, 1, 0, 2e23)
-    ], { timeStepSeconds: 10, steps: 4000, sampleEverySteps: 20 })
+    ], { timeStepSeconds: 10, steps: 4000, sampleEverySteps: 20 }),
+  horseshoe: preset('Órbita em ferradura', 'Múltiplos',
+    'No referencial girante, um corpo 1% fora da órbita do planeta desenha uma ferradura; outro, perto de L4, um girino.', [
+      center(), orbit('Planeta', 1e20, 'Estrela', 5e6),
+      orbit('Ferradura', 0, 'Estrela', 5.05e6, 0, { anomaly: 180 }),
+      orbit('Girino L4', 0, 'Estrela', 5.015e6, 0, { anomaly: 60 })
+    ], { timeStepSeconds: 180, steps: 20000, sampleEverySteps: 20, integrator: 'yoshida4', view: 'rotating' }),
+  j2Precession: preset('Precessão por achatamento (J2)', 'Física',
+    'O achatamento da Terra gira o plano das órbitas: a 45° cerca de 5°/dia para oeste, a 98° cerca de 1°/dia para leste (órbita heliossíncrona).', [
+      body('Terra', earthMass, [0, 0, 0], [0, 0, 0]),
+      orbit('Inclinada 45°', 1000, 'Terra', 7e6, 0.001, { inclination: 45 }),
+      orbit('Heliossíncrona 98°', 1000, 'Terra', 7e6, 0.001, { inclination: 98, anomaly: 120 }),
+      orbit('Polar 90°', 1000, 'Terra', 7e6, 0.001, { inclination: 90, node: 90, anomaly: 240 })
+    ], { timeStepSeconds: 30, steps: 14400, sampleEverySteps: 15, integrator: 'yoshida4',
+      physics: { centralBody: 'Terra', j2: 1.08263e-3, centralRadiusMeters: earthRadius } }),
+  dragDecay: preset('Decaimento por arrasto', 'Física',
+    'Atmosfera exponencial didática (H = 60 km): a 200 km o satélite espirala e reentra em cerca de 13 horas; a 400 km desce só alguns quilômetros.', [
+      { name: 'Terra', massKg: earthMass, positionMeters: [0, 0, 0], velocityMetersPerSecond: [0, 0, 0], radiusMeters: earthRadius },
+      orbit('Satélite a 200 km', 100, 'Terra', earthRadius + 2e5, 0, {}, { radiusMeters: 1, dragAreaPerMassSquareMetersPerKg: 0.1 }),
+      orbit('Satélite a 400 km', 100, 'Terra', earthRadius + 4e5, 0, { anomaly: 180 }, { radiusMeters: 1, dragAreaPerMassSquareMetersPerKg: 0.1 })
+    ], { timeStepSeconds: 20, steps: 8640, sampleEverySteps: 9, integrator: 'yoshida4',
+      physics: { centralBody: 'Terra', centralRadiusMeters: earthRadius, atmosphereDensityKgPerCubicMeter: 7e-9,
+        atmosphereScaleHeightMeters: 6e4, collisions: true } }),
+  hohmann: preset('Transferência de Hohmann', 'Experimentos',
+    'Duas manobras levam um satélite da órbita baixa (7.000 km) à geoestacionária: Δv₁ = 2.337 m/s e, meia elipse depois, Δv₂ = 1.434 m/s.', [
+      body('Terra', earthMass, [0, 0, 0], [0, 0, 0]),
+      orbit('Satélite', 1000, 'Terra', 7e6)
+    ], { timeStepSeconds: 10, steps: 6810, sampleEverySteps: 7, integrator: 'yoshida4',
+      maneuvers: [
+        { body: 'Satélite', step: 583, deltaVelocityMetersPerSecond: [-3.53, 2336.77, 0] },
+        { body: 'Satélite', step: 2501, deltaVelocityMetersPerSecond: [2.17, -1433.91, 0] }
+      ] }),
+  relativity: preset('Precessão relativística', 'Física',
+    'Órbita de Mercúrio com a velocidade da luz reduzida a 1.000 km/s: a correção 1PN gira o periélio cerca de 2,4° por volta (2,6° pela fórmula de primeira ordem).', [
+      body('Sol', sunMass, [0, 0, 0], [0, 0, 0]),
+      orbit('Planeta', 3.3e23, 'Sol', 5.79e10, 0.2056)
+    ], { timeStepSeconds: 7598, steps: 20000, sampleEverySteps: 20, integrator: 'yoshida4',
+      physics: { centralBody: 'Sol', lightSpeedMetersPerSecond: 1e6 } }),
+  planetesimals: preset('Acreção de planetesimais', 'Física',
+    'Trinta planetesimais em órbitas que se cruzam colidem e se fundem, conservando massa e momento.', [
+      { name: 'Estrela', massKg: centralMass, positionMeters: [0, 0, 0], velocityMetersPerSecond: [0, 0, 0], radiusMeters: 3e5 },
+      // Spread semi-major axes and golden-ratio angles: crossing orbits, no overlap at t = 0
+      // (smallest initial separation 6e5 m, more than twice the sum of radii).
+      ...Array.from({ length: 30 }, (_, index) => orbit(`Planetesimal ${index + 1}`, 1e19, 'Estrela',
+        3.4e6 + 1.2e6 * index / 29, 0.05 + 0.17 * ((index * 0.618034) % 1),
+        { argument: (index * 113) % 360, anomaly: (index * 160) % 360 }, { radiusMeters: 1.3e5 }))
+    ], { timeStepSeconds: 40, steps: 20000, sampleEverySteps: 20, physics: { collisions: true } }),
+  integratorComparison: preset('Comparar integradores', 'Física',
+    'Cometa muito excêntrico com passo grosso: o Verlet e o Yoshida mantêm a energia oscilando; o RK4 a deixa derivar.', [
+      center(), orbit('Cometa', 1e11, 'Estrela', 6e6, 0.75, { anomaly: 180 })
+    ], { timeStepSeconds: 240, steps: 6000, sampleEverySteps: 6, compare: true }),
+  ringShepherd: preset('Anel e lua pastora', 'Partículas',
+    '1.500 partículas formam um anel; uma lua massiva externa excita as órbitas em ressonância 2:1 (na faixa de 1,17 × 10⁸ m).', [
+      { name: 'Planeta', massKg: 5.683e26, positionMeters: [0, 0, 0], velocityMetersPerSecond: [0, 0, 0], radiusMeters: 6.0268e7 },
+      orbit('Lua pastora', 5e23, 'Planeta', 1.85e8, 0.02)
+    ], { timeStepSeconds: 300, steps: 20000, sampleEverySteps: 80, integrator: 'yoshida4',
+      particleGroups: [{ name: 'Anel', around: 'Planeta', count: 1500, innerRadiusMeters: 1e8, outerRadiusMeters: 1.45e8 }] }),
+  asteroidBelt: preset('Cinturão e Júpiter', 'Partículas',
+    'Um Júpiter com massa exagerada (10×) agita o cinturão de asteroides; as órbitas em ressonância ganham excentricidade.', [
+      body('Sol', sunMass, [0, 0, 0], [0, 0, 0]),
+      orbit('Júpiter (10×)', 1.898e28, 'Sol', 7.785e11, 0.048)
+    ], { timeStepSeconds: 4e5, steps: 20000, sampleEverySteps: 80, integrator: 'yoshida4',
+      particleGroups: [{ name: 'Cinturão', around: 'Sol', count: 1500, innerRadiusMeters: 3e11, outerRadiusMeters: 5.2e11 }] }),
+  galaxies: preset('Colisão de galáxias', 'Partículas',
+    'Dois núcleos com discos de 1.000 estrelas passam um pelo outro; as forças de maré arrancam caudas e pontes (como Toomre & Toomre, 1972).', [
+      body('Galáxia A', 2e41, [0, 0, 0], [0, 0, 0]),
+      orbit('Galáxia B', 2e41, 'Galáxia A', -4e22, 1.01, { anomaly: -117 })
+    ], { softeningMeters: 1e19, timeStepSeconds: 7e11, steps: 20000, sampleEverySteps: 125, integrator: 'yoshida4',
+      particleGroups: [
+        { name: 'Disco A', around: 'Galáxia A', count: 1000, innerRadiusMeters: 8e19, outerRadiusMeters: 2.5e20 },
+        { name: 'Disco B', around: 'Galáxia B', count: 1000, innerRadiusMeters: 8e19, outerRadiusMeters: 2.5e20, inclinationDegrees: 40 }
+      ] })
 };

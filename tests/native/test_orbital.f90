@@ -1,6 +1,7 @@
 program test_orbital
   use iso_c_binding, only: c_int, c_double
   use orbital_c_api, only: os_step, os_diagnostics
+  use test_features, only: run_feature_tests
   implicit none
   real(c_double), parameter :: pi = acos(-1.0_c_double)
   real(c_double) :: mass(2), pos(3,2), vel(3,2), initial_pos(3,2)
@@ -73,6 +74,8 @@ program test_orbital
   status = os_step(2_c_int, mass, pos, vel, 0.0_c_double, 1.0_c_double, &
                    0.0_c_double, 1_c_int)
   call check(status == 1_c_int, 'invalid time step')
+
+  call run_feature_tests()
   print *, 'All OrbitalSim native tests passed.'
 
 contains

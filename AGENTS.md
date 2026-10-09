@@ -16,7 +16,7 @@ Do not
 introduce UI or file I/O into the Fortran motor. Update `README.md` when the
 layout or workflow changes.
 Ready-to-run educational scenarios live in `web/src/presets.mjs`; keep them in
-SI units and within the API's body, step, and sample limits.
+SI units and within the API's body, particle, step, sample, and work limits.
 
 ## Build and test
 

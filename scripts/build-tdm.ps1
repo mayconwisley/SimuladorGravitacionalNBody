@@ -12,19 +12,24 @@ $output = Join-Path $project 'build\tdm-gcc'
 $modules = Join-Path $output 'modules'
 New-Item -ItemType Directory -Path $modules -Force | Out-Null
 $sources = @(
+    'native\src\orbital_types.f90'
     'native\src\orbital_forces.f90'
-    'native\src\orbital_verlet.f90'
     'native\src\orbital_diagnostics.f90'
+    'native\src\orbital_elements.f90'
+    'native\src\orbital_integrator.f90'
     'native\src\orbital_c_api.f90'
 ) | ForEach-Object { Join-Path $project $_ }
-$testSource = Join-Path $project 'tests\native\test_orbital.f90'
+$testSources = @(
+    'tests\native\test_features.f90'
+    'tests\native\test_orbital.f90'
+) | ForEach-Object { Join-Path $project $_ }
 $testExecutable = Join-Path $output 'orbital_native_tests.exe'
 $library = Join-Path $output 'orbitalsim.dll'
 
 $env:PATH = (Split-Path -Parent $Compiler) + ';' + $output + ';' + $env:PATH
 
 & $Compiler -O0 -g -Wall -Wextra -fcheck=all "-J$modules" "-I$modules" `
-    -o $testExecutable @sources $testSource
+    -o $testExecutable @sources @testSources
 if ($LASTEXITCODE -ne 0) { throw 'Native test compilation failed.' }
 
 & $testExecutable

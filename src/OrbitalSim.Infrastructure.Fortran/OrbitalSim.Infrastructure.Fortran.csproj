@@ -8,5 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="../OrbitalSim.Application/OrbitalSim.Application.csproj" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <InternalsVisibleTo Include="OrbitalSim.IntegrationTests" />
   </ItemGroup>
 </Project>
