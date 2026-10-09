@@ -13,6 +13,7 @@ import ErrorBoundary from './ErrorBoundary.jsx';
 import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
 import SiteFooter from './SiteFooter.jsx';
+import Manual from './Manual.jsx';
 import { fromScenario, integrators, limits, presetDraft, presets, toScenario } from './scenario.mjs';
 import { appendSamples, createDataset, energyDriftFromSamples, suggestedTimeStep } from './dataset.mjs';
 import { runSimulation, streamSimulation } from './simulationClient.mjs';
@@ -76,7 +77,11 @@ export default function App() {
   const frames = dataset?.frames.length ?? 0;
   const frame = frames ? dataset.frames[Math.min(playback.index, frames - 1)] : null;
 
-  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [tab]);
+  useEffect(() => {
+    if (location.hash) {
+      requestAnimationFrame(() => document.getElementById(location.hash.slice(1))?.scrollIntoView());
+    } else window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [tab, location.hash]);
   useEffect(() => { document.title = `${route?.title ?? 'OrbitalSim'} · OrbitalSim`; }, [route]);
   // Typing in the editor changes the draft on every key; persist it once the user pauses.
   useEffect(() => {
@@ -316,6 +321,7 @@ export default function App() {
         onCreate={() => go('editor')} busy={busy} runningKey={runningKey} /> :
       tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()}
         onBrowse={() => go('catalog')} busy={busy} onError={setError} /> :
+      tab === 'manual' ? <Manual /> :
         <>
           {stepTooLarge && <div className="callout warning" role="status">
             <Icon name="alert" size={18} />
@@ -338,6 +344,7 @@ export default function App() {
                 emptyActions={<div className="empty-actions">
                   <button className="button primary" type="button" onClick={() => go('catalog')}><Icon name="grid" size={14} /> Ver simulações</button>
                   <button className="button subtle" type="button" onClick={() => csvInput.current.click()}><Icon name="upload" size={14} /> Importar CSV</button>
+                  <Link className="button subtle" to="/manual#csv">Formato CSV</Link>
                 </div>} />
               {frames > 0 && <Timeline dataset={dataset} playback={playback} />}
             </div>

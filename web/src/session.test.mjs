@@ -14,6 +14,8 @@ test('cada aba tem uma rota própria', () => {
   assert.equal(routeForPath('/resultados/').key, 'results');
   assert.equal(routeForPath('/inexistente'), null);
   assert.equal(pathForTab('results'), '/resultados');
+  assert.equal(routeForPath('/manual').key, 'manual');
+  assert.equal(pathForTab('manual'), '/manual');
 });
 
 test('rascunho e última execução sobrevivem ao recarregamento', () => {

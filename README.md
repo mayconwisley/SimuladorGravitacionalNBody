@@ -58,10 +58,10 @@ escuta somente no computador local. Use `-Port 5090` para escolher outra porta
 e encerre com `Ctrl+C`. Encerre a instância em execução antes de recompilar no
 Windows, pois a DLL nativa fica em uso pelo servidor.
 
-Cada aba tem um endereço próprio (`/`, `/editor`, `/resultados`); recarregar a
+Cada aba tem um endereço próprio (`/`, `/editor`, `/resultados`, `/manual`); recarregar a
 página mantém a aba, o rascunho do editor e recalcula a última simulação.
 
-- **Simulações**: busque ou filtre os 36 cenários e clique em **Visualizar**
+- **Simulações**: busque ou filtre os 100 cenários e clique em **Visualizar**
   para executar, ou em **Editar** para levar o cenário ao formulário.
 - **Criar cenário**: escolha o integrador e os parâmetros numéricos (Δt
   negativo integra para trás no tempo); defina cada corpo por vetores XYZ ou por
@@ -85,8 +85,12 @@ página mantém a aba, o rascunho do editor e recalcula a última simulação.
   encontro mais próximo entre corpos com massa, um aviso oferece o Δt sugerido
   pelo motor.
 - **Importar CSV** abre `trajectory.csv` e, opcionalmente, `diagnostics.csv`,
-  `events.csv` e `particles.csv` de uma execução da CLI. O formulário envia os
-  dados somente à API local.
+  `events.csv` e `particles.csv` de uma execução da CLI. Os arquivos são lidos
+  no navegador e exibidos em Resultados; é preciso selecioná-los novamente após
+  recarregar a página.
+- **Manual** (`/manual`): guia para quem usa a aplicação no navegador, com
+  galeria, criação de cenários, formatos JSON e CSV, controles dos resultados,
+  precisão, limites e solução de problemas.
 
 ### Galeria de simulações
 
@@ -261,6 +265,7 @@ tests/OrbitalSim.IntegrationTests/     testes .NET e interoperabilidade
 examples/                              cenários prontos
 benchmarks/                            metodologia do benchmark
 web/src/ScenarioEditor.jsx             orquestração do editor e resumo validado
+web/src/Manual.jsx                     manual de uso para o público da interface
 web/src/BodyCard.jsx                   corpo por vetores ou elementos orbitais
 web/src/PhysicsSection.jsx             J2, atmosfera, relatividade e colisões
 web/src/ParticleGroupsSection.jsx      grupos de partículas
@@ -281,7 +286,7 @@ web/src/csvImport.mjs                  importação dos CSV da CLI
 web/src/usePlayback.js                 reprodução das amostras por quadro
 web/src/useEngineStatus.js             estado da API via /api/health
 web/src/ErrorBoundary.jsx              falhas de renderização sem derrubar a interface
-web/src/routes.mjs                     rotas das abas (/, /editor, /resultados)
+web/src/routes.mjs                     rotas das abas (/, /editor, /resultados, /manual)
 web/src/session.mjs                    rascunho e última execução mantidos no F5
 web/src/App.jsx                        composição e estado da interface React
 web/style.css                          tokens de design e estilos da interface
@@ -340,7 +345,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke-api.ps1
 node scripts/verify-presets.mjs
 ```
 
-`verify-presets.mjs` requer a API local em execução e verifica os 36 cenários,
+`verify-presets.mjs` requer a API local em execução e verifica os 100 cenários,
 as amostras, as partículas e os resultados numéricos finitos; a maior deriva de
 energia é calculada só entre os cenários conservativos.
 

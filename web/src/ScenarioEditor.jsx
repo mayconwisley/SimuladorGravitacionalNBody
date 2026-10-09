@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router';
 import Icon from './Icons.jsx';
 import BodyCard from './BodyCard.jsx';
 import PhysicsSection from './PhysicsSection.jsx';
@@ -68,6 +69,7 @@ export default function ScenarioEditor({ draft, setDraft, onRun, onBrowse, busy,
           <div className="header-actions">
             <button className="button subtle small" type="button" onClick={() => jsonInput.current.click()}><Icon name="upload" size={14} /> Importar JSON</button>
             <input ref={jsonInput} type="file" accept=".json,application/json" hidden onChange={importJson} />
+            <Link className="button subtle small" to="/manual#json">Formato JSON</Link>
           </div>
         </header>
         <div className="chips" aria-label="Cenários prontos">

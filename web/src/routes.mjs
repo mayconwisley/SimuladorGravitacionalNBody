@@ -3,7 +3,8 @@
 export const routes = [
   { key: 'catalog', path: '/', label: 'Simulações', icon: 'grid', title: 'Simulações' },
   { key: 'editor', path: '/editor', label: 'Criar cenário', icon: 'sliders', title: 'Criar cenário' },
-  { key: 'results', path: '/resultados', label: 'Resultados', icon: 'orbit', title: 'Resultados' }
+  { key: 'results', path: '/resultados', label: 'Resultados', icon: 'orbit', title: 'Resultados' },
+  { key: 'manual', path: '/manual', label: 'Manual', icon: 'info', title: 'Manual' }
 ];
 
 export function routeForPath(pathname) {
