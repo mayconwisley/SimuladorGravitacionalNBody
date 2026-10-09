@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { advancePosition, clampIndex } from './playback.mjs';
 
 const samplesPerSecond = 12;
 
@@ -14,10 +15,10 @@ export default function usePlayback(frameCount) {
     if (!playing || frameCount < 2) return;
     let frame;
     let previous = performance.now();
-    position.current = index;
+    position.current = clampIndex(index, last);
     const tick = now => {
-      position.current = Math.min(last, position.current + (now - previous) / 1000 * samplesPerSecond * speed);
-      previous = now;
+      position.current = advancePosition(position.current, now - previous, samplesPerSecond * speed, last);
+      previous = Math.max(previous, now);
       setIndex(Math.floor(position.current));
       if (position.current >= last) setPlaying(false);
       else frame = requestAnimationFrame(tick);
@@ -25,11 +26,11 @@ export default function usePlayback(frameCount) {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
     // index is read only when playback starts; including it would restart the loop every frame.
-  },[playing, speed, frameCount, last]);
+  }, [playing, speed, frameCount, last]);
 
   const seek = useCallback(next => {
     setPlaying(false);
-    setIndex(Math.max(0, Math.min(last, next)));
+    setIndex(clampIndex(Math.round(next), last));
   }, [last]);
 
   const toggle = useCallback(() => {
@@ -40,5 +41,6 @@ export default function usePlayback(frameCount) {
 
   const reset = useCallback(() => { setPlaying(false); setIndex(0); }, []);
 
-  return { index, playing, speed, setSpeed, seek, toggle, reset };
+  // Consumers index dataset.frames directly, so never expose a sample outside the current dataset.
+  return { index: Math.floor(clampIndex(index, last)), playing, speed, setSpeed, seek, toggle, reset };
 }

@@ -185,6 +185,7 @@ web/src/Timeline.jsx                   linha do tempo, reprodução e atalhos
 web/src/BodyList.jsx                   seleção do corpo acompanhado
 web/src/usePlayback.js                 reprodução das amostras por quadro
 web/src/useEngineStatus.js             estado da API via /api/health
+web/src/ErrorBoundary.jsx              falhas de renderização sem derrubar a interface
 web/src/App.jsx                        composição e estado da interface React
 web/style.css                          tokens de design e estilos da interface
 ```

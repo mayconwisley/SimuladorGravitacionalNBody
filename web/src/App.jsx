@@ -7,6 +7,7 @@ import Diagnostics from './Diagnostics.jsx';
 import BodyList from './BodyList.jsx';
 import Timeline from './Timeline.jsx';
 import Icon from './Icons.jsx';
+import ErrorBoundary from './ErrorBoundary.jsx';
 import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
 import { fromApi, presetDraft, presets, toScenario } from './scenario.mjs';
@@ -121,6 +122,7 @@ export default function App() {
         {tab === 'results' && dataset && <span className="scenario-pill"><Icon name="orbit" size={14} />{source}</span>}
       </div>}
 
+      <ErrorBoundary resetKey={`${tab}:${source}`} onReset={() => setTab('catalog')}>
       {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)}
         onCreate={() => setTab('editor')} busy={busy} runningKey={runningKey} /> :
       tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()}
@@ -146,6 +148,7 @@ export default function App() {
             <span className="mono info-count">{dataset.frames.length} amostras · {dataset.names.length} corpos</span>
           </div>}
         </>}
+      </ErrorBoundary>
     </main>
 
     {error && <div className="toast" role="alert">

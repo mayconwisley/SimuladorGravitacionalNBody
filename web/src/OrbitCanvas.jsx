@@ -27,6 +27,17 @@ function scaleBar(metersPerPixel, maxPixels) {
   return { meters, pixels: meters / metersPerPixel };
 }
 
+// Rounded label background; avoids CanvasRenderingContext2D.roundRect, missing in older browsers.
+function pill(context, x, y, width, height) {
+  const radius = height / 2;
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.arc(x + width - radius, y + radius, radius, -Math.PI / 2, Math.PI / 2);
+  context.lineTo(x + radius, y + height);
+  context.arc(x + radius, y + radius, radius, Math.PI / 2, 3 * Math.PI / 2);
+  context.closePath();
+}
+
 function drawStars(context, width, height) {
   for (let i = 0; i < 160; i++) {
     const x = ((i * 137.508 + 91) % 997) / 997 * width;
@@ -210,7 +221,7 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
           const y = Math.max(4, screen.y - radius - 16);
           context.fillStyle = 'rgba(8, 12, 22, .72)';
           context.beginPath();
-          context.roundRect(x, y, width + 14, 19, 9.5);
+          pill(context, x, y, width + 14, 19);
           context.fill();
           context.strokeStyle = rgba(color, 0.35);
           context.lineWidth = 1;

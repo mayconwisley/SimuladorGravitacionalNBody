@@ -12,3 +12,33 @@ export function formatTime(seconds) {
   return `${formatNumber(seconds, 2)} s`;
 }
 
+const pad2 = value => String(value).padStart(2, '0');
+
+// Fixed-width clock for the playback readout. The layout depends only on the total
+// duration, so every sample of one simulation has the same number of characters.
+export function clockUnit(totalSeconds) {
+  if (!(totalSeconds >= 60)) return 's';
+  if (totalSeconds < 3600) return 'min:s';
+  if (totalSeconds < 86400) return 'h:min:s';
+  return 'd h:min:s';
+}
+
+export function formatClock(seconds, totalSeconds = seconds) {
+  if (!Number.isFinite(seconds)) return '—';
+  const unit = clockUnit(totalSeconds);
+  const value = Math.max(0, seconds);
+  if (unit === 's') {
+    const width = Math.max(0, totalSeconds).toFixed(2).length;
+    return `${value.toFixed(2).padStart(width, '0').replace('.', ',')} s`;
+  }
+  // Round to milliseconds first so 5999.9999999 s reads as 01:40:00, not 01:39:59.
+  const whole = Math.floor(Math.round(value * 1000) / 1000);
+  const days = Math.floor(whole / 86400);
+  const hours = Math.floor(whole % 86400 / 3600);
+  const minutes = Math.floor(whole % 3600 / 60);
+  const rest = whole % 60;
+  if (unit === 'min:s') return `${pad2(minutes)}:${pad2(rest)}`;
+  if (unit === 'h:min:s') return `${pad2(hours)}:${pad2(minutes)}:${pad2(rest)}`;
+  const dayWidth = String(Math.floor(totalSeconds / 86400)).length;
+  return `${String(days).padStart(dayWidth, '0')}d ${pad2(hours)}:${pad2(minutes)}:${pad2(rest)}`;
+}

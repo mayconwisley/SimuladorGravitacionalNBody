@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import Icon from './Icons.jsx';
-import { formatTime } from './format.mjs';
+import { clockUnit, formatClock, formatTime } from './format.mjs';
 
 const speeds = [0.25, 0.5, 1, 2, 4, 8];
 
@@ -13,6 +13,7 @@ export default function Timeline({ dataset, playback }) {
   const { index, playing, speed, setSpeed, seek, toggle, reset } = playback;
   const frame = dataset.frames[index];
   const lastFrame = dataset.frames.at(-1);
+  const unit = clockUnit(lastFrame.time);
   const progress = dataset.frames.length > 1 ? index / (dataset.frames.length - 1) : 1;
 
   useEffect(() => {
@@ -30,9 +31,11 @@ export default function Timeline({ dataset, playback }) {
 
   return <div className="timeline">
     <div className="timeline-readout">
-      <div><span className="label">Tempo simulado</span><strong className="mono">{formatTime(frame.time)}</strong></div>
-      <div><span className="label">Passo</span><strong className="mono subtle">{frame.step} <span>/ {lastFrame.step}</span></strong></div>
-      <div className="timeline-end"><span className="label">Duração</span><strong className="mono subtle">{formatTime(lastFrame.time)}</strong></div>
+      <div><span className="label">Tempo simulado <span className="clock-unit">{unit}</span></span>
+        <strong className="mono time-value">{formatClock(frame.time, lastFrame.time)}</strong></div>
+      <div><span className="label">Passo</span><strong className="mono subtle">
+        <span className="step-current" style={{ minWidth: `${String(lastFrame.step).length}ch` }}>{frame.step}</span> <span>/ {lastFrame.step}</span></strong></div>
+      <div className="timeline-end"><span className="label">Duração</span><strong className="mono subtle">{formatClock(lastFrame.time, lastFrame.time)}</strong></div>
     </div>
     <input className="scrubber" type="range" min="0" max={dataset.frames.length - 1} value={index}
       style={{ '--progress': `${(progress * 100).toFixed(2)}%` }}

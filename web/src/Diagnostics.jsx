@@ -56,7 +56,7 @@ export default function Diagnostics({ dataset, index }) {
     </div>
     <div className="chart">
       <div className="chart-header"><span className="label">Deriva de energia</span>
-        <span className="mono chart-scale">{chart.initial?.energy ? `±${chart.maximum.toExponential(1)}` : 'sem dados'}</span></div>
+        <span className="mono chart-scale">{chart.initial?.energy ? `±${(100 * chart.maximum).toExponential(1)} %` : 'sem dados'}</span></div>
       <div className="chart-plot"><svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" role="img"
         aria-label="Deriva relativa de energia ao longo da simulação">
         <defs>
