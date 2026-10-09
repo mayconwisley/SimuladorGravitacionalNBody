@@ -186,6 +186,8 @@ web/src/BodyList.jsx                   seleção do corpo acompanhado
 web/src/usePlayback.js                 reprodução das amostras por quadro
 web/src/useEngineStatus.js             estado da API via /api/health
 web/src/ErrorBoundary.jsx              falhas de renderização sem derrubar a interface
+web/src/routes.mjs                     rotas das abas (/, /editor, /resultados)
+web/src/session.mjs                    rascunho e última execução mantidos no F5
 web/src/App.jsx                        composição e estado da interface React
 web/style.css                          tokens de design e estilos da interface
 ```

@@ -48,7 +48,7 @@ function drawStars(context, width, height) {
   }
 }
 
-export default function OrbitCanvas({ dataset, index, focus, source, emptyActions }) {
+export default function OrbitCanvas({ dataset, index, focus, source, emptyActions, loading = false, emptyNotice = '' }) {
   const canvasRef = useRef(null);
   const pointer = useRef(null);
   const [size, setSize] = useState({ width: 1, height: 1 });
@@ -301,9 +301,14 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     {dataset && <div className="viewport-hud bottom-hint">Arraste para girar · role para zoom · duplo clique para redefinir</div>}
     {!dataset && <div className="viewport-empty">
       <span className="empty-orbit"><Icon name="orbit" size={30} strokeWidth={1.4} /></span>
-      <strong>Nenhuma simulação carregada</strong>
-      <span>Escolha uma simulação pronta ou execute o seu cenário para ver as órbitas aqui.</span>
-      {emptyActions}
+      {loading ? <>
+        <strong>Calculando simulação…</strong>
+        <span>O motor Fortran está integrando as órbitas.</span>
+      </> : <>
+        <strong>Nenhuma simulação carregada</strong>
+        <span>{emptyNotice || 'Escolha uma simulação pronta ou execute o seu cenário para ver as órbitas aqui.'}</span>
+        {emptyActions}
+      </>}
     </div>}
   </section>;
 }
