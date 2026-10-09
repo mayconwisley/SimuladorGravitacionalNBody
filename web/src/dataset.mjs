@@ -1,12 +1,14 @@
 // Dataset model shared by the viewer: frames in time order, per-step diagnostics, events and
 // particle groups. Built incrementally while a simulation streams in.
 
+// The API sends little-endian float32, the byte order of every browser platform. Uint8Array.fromBase64
+// decodes without the intermediate binary string where the browser supports it.
 export function decodeParticles(base64) {
   if (!base64) return null;
+  if (typeof Uint8Array.fromBase64 === 'function') return new Float32Array(Uint8Array.fromBase64(base64).buffer);
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  // The API sends little-endian float32, the byte order of every browser platform.
   return new Float32Array(bytes.buffer);
 }
 
@@ -40,24 +42,35 @@ function diagnosticsFromSample(sample) {
 }
 
 export function createDataset({ particleGroups = [], particleCount = 0, expectedSamples = 0, scenario = null } = {}) {
-  return { id: crypto.randomUUID(), frames: [], names: [], diagnostics: new Map(), events: [], particleGroups, particleCount,
-    expectedSamples, scenario, complete: false };
+  return { id: crypto.randomUUID(), revision: 0, frames: [], names: [], diagnostics: new Map(), events: [], particleGroups,
+    particleCount, expectedSamples, scenario, complete: false };
 }
 
-// Returns a new dataset with the samples appended (frames and events stay in step order).
+// Appends the samples (frames and events stay in step order) and returns a new dataset object
+// so React sees the change. The frame, diagnostic and event collections grow in place: copying
+// them on every streamed chunk would cost O(n²) time and garbage over a run. Only the newest
+// object of a run is meant to be read; `revision` counts the appended chunks.
 export function appendSamples(dataset, samples) {
   if (!samples.length) return dataset;
-  const frames = dataset.frames.slice();
-  const diagnostics = new Map(dataset.diagnostics);
-  const events = dataset.events.slice();
+  const { frames, diagnostics, events } = dataset;
   for (const sample of samples) {
     frames.push(frameFromSample(sample));
     diagnostics.set(sample.step, diagnosticsFromSample(sample));
     for (const item of sample.events ?? []) events.push({ kind: item.kind, step: item.step,
       time: item.timeSeconds, body: item.body, other: item.other ?? null, distance: item.distanceMeters ?? null });
   }
-  return { ...dataset, frames, diagnostics, events,
+  return { ...dataset, revision: (dataset.revision ?? 0) + 1,
     names: dataset.names.length ? dataset.names : samples[0].bodies.map(item => item.name) };
+}
+
+// Relative energy drift computed straight from API samples, without building frames (used by the
+// integrator comparison, which only needs this series).
+export function energyDriftFromSamples(samples) {
+  const initial = samples[0]?.diagnostics?.energyJoules;
+  return samples.map(sample => {
+    const energy = sample.diagnostics?.energyJoules;
+    return Number.isFinite(energy) && initial ? (energy - initial) / Math.abs(initial) : null;
+  });
 }
 
 export function fromApi(response, scenario = null) {

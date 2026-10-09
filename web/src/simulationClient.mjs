@@ -21,9 +21,11 @@ async function post(path, scenario, signal) {
 
 // Splits a text buffer into complete NDJSON messages and the unfinished remainder.
 export function parseNdjson(buffer) {
-  const lines = buffer.split('\n');
-  const rest = lines.pop();
-  return { messages: lines.filter(line => line.trim()).map(line => JSON.parse(line)), rest };
+  const end = buffer.lastIndexOf('\n');
+  if (end < 0) return { messages: [], rest: buffer };
+  const messages = [];
+  for (const line of buffer.slice(0, end).split('\n')) if (line.trim()) messages.push(JSON.parse(line));
+  return { messages, rest: buffer.slice(end + 1) };
 }
 
 export async function streamSimulation(scenario, { signal, onStart, onSamples } = {}) {
@@ -32,20 +34,31 @@ export async function streamSimulation(scenario, { signal, onStart, onSamples } 
   const decoder = new TextDecoder();
   let buffer = '';
   let ended = false;
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const { messages, rest } = parseNdjson(buffer);
-    buffer = rest;
-    const samples = [];
-    for (const message of messages) {
-      if (message.type === 'start') onStart?.(message);
-      else if (message.type === 'sample') samples.push(message.sample);
-      else if (message.type === 'error') throw new Error(message.error || 'O motor falhou durante a simulação.');
-      else if (message.type === 'end') ended = true;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const text = decoder.decode(value, { stream: true });
+      buffer += text;
+      // A sample line with particles spans many chunks: parse only once a line is complete.
+      if (!text.includes('\n')) continue;
+      const { messages, rest } = parseNdjson(buffer);
+      buffer = rest;
+      const samples = [];
+      for (const message of messages) {
+        if (message.type === 'start') onStart?.(message);
+        else if (message.type === 'sample') samples.push(message.sample);
+        else if (message.type === 'error') throw new Error(message.error || 'O motor falhou durante a simulação.');
+        else if (message.type === 'end') ended = true;
+      }
+      if (samples.length) onSamples?.(samples);
     }
-    if (samples.length) onSamples?.(samples);
+  } catch (cause) {
+    // Release the connection so the server stops computing a run nobody reads.
+    reader.cancel().catch(() => {});
+    throw cause;
+  } finally {
+    reader.releaseLock();
   }
   if (!ended) throw new Error('A simulação foi interrompida antes do fim.');
 }

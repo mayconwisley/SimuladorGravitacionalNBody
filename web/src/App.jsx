@@ -14,7 +14,7 @@ import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
 import SiteFooter from './SiteFooter.jsx';
 import { fromScenario, integrators, limits, presetDraft, presets, toScenario } from './scenario.mjs';
-import { appendSamples, createDataset, energyDriftSeries, fromApi, suggestedTimeStep } from './dataset.mjs';
+import { appendSamples, createDataset, energyDriftFromSamples, suggestedTimeStep } from './dataset.mjs';
 import { runSimulation, streamSimulation } from './simulationClient.mjs';
 import { withManeuver } from './sandbox.mjs';
 import { datasetFromFiles } from './csvImport.mjs';
@@ -68,6 +68,7 @@ export default function App() {
   const [reversal, setReversal] = useState(null);
   const csvInput = useRef(null);
   const abort = useRef(null);
+  const compareAbort = useRef(null);
   const pendingSeek = useRef(null);
   const restoreAttempted = useRef(false);
   const engine = useEngineStatus();
@@ -77,8 +78,12 @@ export default function App() {
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [tab]);
   useEffect(() => { document.title = `${route?.title ?? 'OrbitalSim'} · OrbitalSim`; }, [route]);
-  useEffect(() => { saveDraft(draft); }, [draft]);
-  useEffect(() => () => abort.current?.abort(), []);
+  // Typing in the editor changes the draft on every key; persist it once the user pauses.
+  useEffect(() => {
+    const timer = setTimeout(() => saveDraft(draft), 300);
+    return () => clearTimeout(timer);
+  }, [draft]);
+  useEffect(() => () => { abort.current?.abort(); compareAbort.current?.abort(); }, []);
 
   // After a sandbox rerun, return to the instant where the change was made.
   useEffect(() => {
@@ -102,9 +107,14 @@ export default function App() {
   async function execute(scenario, label, { presetKey = null, view: preferred = 'inertial', compare = false,
     keepFocus = false, seekTo = null, reversalOf = null } = {}) {
     abort.current?.abort();
+    compareAbort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;
     let current = createDataset({ scenario });
+    // Streamed chunks can arrive many times per frame; render at most once per animation frame.
+    let pendingFrame = 0;
+    const commit = () => { pendingFrame = 0; if (!controller.signal.aborted) setDataset(current); };
+    const flush = () => { if (pendingFrame) cancelAnimationFrame(pendingFrame); commit(); };
     setError(''); setNotice(''); setEmptyNotice(''); setBusy(true); setRunningKey(presetKey);
     setComparison(null); setReversal(reversalOf); setView(preferred);
     if (!keepFocus) setFocus(null);
@@ -120,13 +130,17 @@ export default function App() {
             particleCount: message.particleCount ?? 0, expectedSamples: message.expectedSamples ?? 0 };
           setDataset(current);
         },
-        onSamples: samples => { current = appendSamples(current, samples); setDataset(current); }
+        onSamples: samples => {
+          current = appendSamples(current, samples);
+          if (!pendingFrame) pendingFrame = requestAnimationFrame(commit);
+        }
       });
       current = { ...current, complete: true };
-      setDataset(current);
+      flush();
       saveLastRun({ label, scenario, view: preferred });
       if (compare) compareIntegrators(scenario);
     } catch (cause) {
+      if (pendingFrame) cancelAnimationFrame(pendingFrame);
       if (cause?.name === 'AbortError') return;
       setError(`Falha ao executar: ${cause.message}`);
       if (!current.frames.length) setDataset(null);
@@ -161,16 +175,28 @@ export default function App() {
     else go('editor');
   }
 
+  // Test particles are massless: they cannot change the energy, so the comparison runs without
+  // them (much less data and work) and keeps only the drift series of each integrator.
   async function compareIntegrators(scenario = dataset?.scenario) {
     if (!scenario) return;
+    compareAbort.current?.abort();
+    const controller = new AbortController();
+    compareAbort.current = controller;
     setComparison({ status: 'running' });
+    const { particleGroups, ...massive } = scenario;
     try {
       const keys = Object.keys(integrators);
-      const results = await Promise.all(keys.map(key => runSimulation({ ...scenario, integrator: key })));
-      setComparison({ status: 'done', series: keys.map((key, position) => ({ key, label: integrators[key].label,
-        values: energyDriftSeries(fromApi(results[position])) })) });
+      const series = await Promise.all(keys.map(async key => {
+        const result = await runSimulation({ ...massive, integrator: key }, controller.signal);
+        if (!result?.samples?.length) throw new Error('A API não retornou amostras.');
+        return { key, label: integrators[key].label, values: energyDriftFromSamples(result.samples) };
+      }));
+      if (compareAbort.current === controller) setComparison({ status: 'done', series });
     } catch (cause) {
+      if (cause?.name === 'AbortError') return;
       setComparison({ status: 'error', error: `Não foi possível comparar: ${cause.message}` });
+    } finally {
+      if (compareAbort.current === controller) compareAbort.current = null;
     }
   }
 
@@ -224,6 +250,7 @@ export default function App() {
   async function importCsv(event) {
     try {
       abort.current?.abort();
+      compareAbort.current?.abort();
       const imported = await datasetFromFiles(event.target.files);
       saveLastRun({ label: 'Dados importados', scenario: null });
       setDataset(imported); setSource('Dados importados'); setFocus(null); setComparison(null);

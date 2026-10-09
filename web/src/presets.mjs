@@ -1,72 +1,15 @@
-// Educational initial conditions in SI units. These are illustrative systems,
-// not ephemerides or predictions for named real objects.
-const G = 6.67430e-11;
-const centralMass = 1e23;
-const earthMass = 5.972e24;
-
-const body = (name, massKg, positionMeters, velocityMetersPerSecond) =>
-  [name, massKg, positionMeters, velocityMetersPerSecond];
-const center = (name = 'Estrela') => body(name, centralMass, [0, 0, 0], [0, 0, 0]);
-
-function orbiter(name, massKg, radiusMeters, phaseDegrees = 0,
-  speedFactor = 1, inclinationDegrees = 0, primaryMassKg = centralMass) {
-  const phase = phaseDegrees * Math.PI / 180;
-  const inclination = inclinationDegrees * Math.PI / 180;
-  const speed = speedFactor * Math.sqrt(G * primaryMassKg / radiusMeters);
-  return body(name, massKg,
-    [radiusMeters * Math.cos(phase),
-      radiusMeters * Math.sin(phase) * Math.cos(inclination),
-      radiusMeters * Math.sin(phase) * Math.sin(inclination)],
-    [-speed * Math.sin(phase),
-      speed * Math.cos(phase) * Math.cos(inclination),
-      speed * Math.cos(phase) * Math.sin(inclination)]);
-}
-
-function binary(massA, massB, separationMeters) {
-  const total = massA + massB;
-  const relativeSpeed = Math.sqrt(G * total / separationMeters);
-  return [
-    body('Estrela A', massA, [-separationMeters * massB / total, 0, 0],
-      [0, -relativeSpeed * massB / total, 0]),
-    body('Estrela B', massB, [separationMeters * massA / total, 0, 0],
-      [0, relativeSpeed * massA / total, 0])
-  ];
-}
-
-// A body given by Keplerian elements around an earlier body (meters and degrees).
-const orbit = (name, massKg, around, semiMajorAxisMeters, eccentricity = 0, angles = {}, extra = {}) => ({
-  name, massKg, ...extra,
-  orbit: { around, semiMajorAxisMeters, eccentricity, inclinationDegrees: angles.inclination ?? 0,
-    ascendingNodeDegrees: angles.node ?? 0, argumentOfPeriapsisDegrees: angles.argument ?? 0,
-    trueAnomalyDegrees: angles.anomaly ?? 0 }
-});
-
-// view: 'rotating' opens the result in the frame co-rotating with the two heaviest bodies;
-// compare: true runs the integrator comparison once the result is loaded.
-function preset(label, category, description, bodies, options = {}) {
-  return {
-    label, category, description, gravity: String(G),
-    softeningMeters: String(options.softeningMeters ?? 0),
-    timeStepSeconds: String(options.timeStepSeconds ?? 15),
-    steps: String(options.steps ?? 2600),
-    sampleEverySteps: String(options.sampleEverySteps ?? 13),
-    bodies,
-    ...(options.integrator && { integrator: options.integrator }),
-    ...(options.physics && { physics: options.physics }),
-    ...(options.particleGroups && { particleGroups: options.particleGroups }),
-    ...(options.maneuvers && { maneuvers: options.maneuvers }),
-    ...(options.view && { view: options.view }),
-    ...(options.compare && { compare: true })
-  };
-}
-
-const sunMass = 1.98847e30;
-const earthRadius = 6.378137e6;
+// Educational initial conditions in SI units. The classic gallery below uses illustrative
+// systems; the Solar System and exoplanet scenarios use approximate published elements.
+import { binary, body, center, centralMass, earthMass, earthRadius, orbit, orbiter, preset, sunMass }
+  from './presetHelpers.mjs';
+import { solarSystemPresets } from './presetsSolarSystem.mjs';
+import { exoplanetPresets } from './presetsExoplanets.mjs';
+import { laboratoryPresets } from './presetsLaboratory.mjs';
 
 const equalBinary = binary(1e23, 1e23, 4e6);
 const unequalBinary = binary(2e23, 5e22, 5e6);
 
-export const presets = {
+const classicPresets = {
   satellite: preset('Terra e satélite', 'Órbitas',
     'Uma volta baixa ao redor da Terra, usando valores aproximados.', [
       body('Terra', earthMass, [0, 0, 0], [0, 0, 0]),
@@ -273,3 +216,6 @@ export const presets = {
         { name: 'Disco B', around: 'Galáxia B', count: 1000, innerRadiusMeters: 8e19, outerRadiusMeters: 2.5e20, inclinationDegrees: 40 }
       ] })
 };
+
+// Gallery order: the classic scenarios first, then real systems and the laboratory set.
+export const presets = { ...classicPresets, ...solarSystemPresets, ...exoplanetPresets, ...laboratoryPresets };

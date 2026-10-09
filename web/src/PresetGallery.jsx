@@ -1,16 +1,16 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router';
 import Icon from './Icons.jsx';
+import Pagination from './Pagination.jsx';
 import { formatTime } from './format.mjs';
+import { filterPresets, paginate } from './galleryPaging.mjs';
 import { presets } from './scenario.mjs';
 
 const entries = Object.entries(presets);
+const positions = new Map(entries.map(([key], index) => [key, index]));
 const categories = ['Todos', ...new Set(entries.map(([, preset]) => preset.category))];
 const reducedMotion = typeof window !== 'undefined' &&
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-function normalized(value) {
-  return value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
 
 function durationLabel(preset) {
   const seconds = Number(preset.steps) * Number(preset.timeStepSeconds);
@@ -54,7 +54,7 @@ function HeroOrbit() {
   </svg>;
 }
 
-function PresetArt({ count, category, index }) {
+const PresetArt = memo(function PresetArt({ count, category, index }) {
   const visible = Math.min(count - 1, 5);
   return <div className={`preset-art${category === 'Múltiplos' ? ' preset-art-binary' : ''}`} aria-hidden="true">
     <span className="art-number mono">{String(index + 1).padStart(2, '0')}</span>
@@ -74,21 +74,34 @@ function PresetArt({ count, category, index }) {
       </g>
     </svg>
   </div>;
-}
+});
 
 export default function PresetGallery({ onView, onEdit, onCreate, busy, runningKey }) {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('Todos');
-  const filtered = useMemo(() => entries.filter(([, preset]) => {
-    const categoryMatches = category === 'Todos' || preset.category === category;
-    const searchText = normalized(`${preset.label} ${preset.description} ${preset.category}`);
-    return categoryMatches && searchText.includes(normalized(query.trim()));
-  }), [query, category]);
+  // Search, category and page live in the URL, so F5 and the back button keep the gallery position.
+  const [params, setParams] = useSearchParams();
+  const query = params.get('busca') ?? '';
+  const category = categories.includes(params.get('categoria')) ? params.get('categoria') : 'Todos';
+  const listTop = useRef(null);
+  const filtered = useMemo(() => filterPresets(entries, { query, category }), [query, category]);
+  const page = paginate(filtered, params.get('pagina'));
+
+  const update = (changes, { replace = false } = {}) => setParams(previous => {
+    const next = new URLSearchParams(previous);
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === null || value === '' || value === 'Todos' || value === 1) next.delete(key);
+      else next.set(key, String(value));
+    }
+    return next;
+  }, { replace, preventScrollReset: true });
+  const goToPage = value => {
+    update({ pagina: value });
+    listTop.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   return <section className="catalog">
     <div className="hero">
       <div className="hero-copy">
-        <span className="kicker"><Icon name="sparkle" size={13} /> Motor Fortran · Velocity Verlet</span>
+        <span className="kicker"><Icon name="sparkle" size={13} /> Motor Fortran · Verlet, Yoshida e RK4</span>
         <h1>O universo em <span className="gradient-text">movimento.</span></h1>
         <p>Parta de um cenário pronto, acompanhe as órbitas em 3D e confira a conservação de energia ao longo do tempo.</p>
         <div className="hero-actions">
@@ -106,25 +119,25 @@ export default function PresetGallery({ onView, onEdit, onCreate, busy, runningK
         <span className="hero-caption mono">Δt · integração simplética</span></div>
     </div>
 
-    <div className="section-title">
+    <div className="section-title" ref={listTop}>
       <div><p className="eyebrow">Biblioteca de cenários</p><h2>Encontre seu próximo experimento</h2>
         <p>Visualize a dinâmica com um clique. Todos os cenários podem ser editados.</p></div>
     </div>
     <div className="catalog-toolbar">
       <label className="search-field">
         <Icon name="search" />
-        <input value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar simulações"
-          placeholder="Buscar: binária, elipse, satélite…" type="search" />
+        <input value={query} onChange={event => update({ busca: event.target.value, pagina: null }, { replace: true })}
+          aria-label="Buscar simulações" placeholder="Buscar: Júpiter, binária, manobra, galáxia…" type="search" />
       </label>
       <div className="chips" role="group" aria-label="Filtrar categoria">
         {categories.map(item => <button type="button" key={item}
           className={`chip${category === item ? ' active' : ''}`} aria-pressed={category === item}
-          onClick={() => setCategory(item)}>{item}</button>)}
+          onClick={() => update({ categoria: item, pagina: null })}>{item}</button>)}
       </div>
       <span className="result-count mono">{filtered.length}/{entries.length}</span>
     </div>
-    {filtered.length ? <div className="catalog-grid">{filtered.map(([key, preset]) => {
-      const index = entries.findIndex(([item]) => item === key);
+    {filtered.length ? <div className="catalog-grid">{page.items.map(([key, preset]) => {
+      const index = positions.get(key);
       const running = busy && runningKey === key;
       return <article className={`preset-card${running ? ' running' : ''}`} key={key}>
         <PresetArt count={preset.bodies.length} category={preset.category} index={index} />
@@ -145,6 +158,10 @@ export default function PresetGallery({ onView, onEdit, onCreate, busy, runningK
       </article>;
     })}</div> : <div className="empty-state"><Icon name="search" size={22} />
       <strong>Nenhuma simulação encontrada</strong><span>Tente outro termo ou categoria.</span></div>}
-    <p className="footnote"><Icon name="info" size={14} /> Cenários didáticos em unidades SI. “Terra e satélite” e “Sol e Terra” usam valores aproximados; os demais são sistemas idealizados.</p>
+    {filtered.length > 0 && <div className="catalog-pages">
+      <span className="mono page-summary">{page.start + 1}–{page.end} de {filtered.length}</span>
+      <Pagination page={page.page} pageCount={page.pageCount} onChange={goToPage} />
+    </div>}
+    <p className="footnote"><Icon name="info" size={14} /> Todos os cenários usam unidades SI. Sistema Solar e exoplanetas partem de elementos orbitais e massas publicados (aproximados); os demais são sistemas didáticos, com as simplificações indicadas em cada descrição.</p>
   </section>;
 }
