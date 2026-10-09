@@ -34,7 +34,7 @@ function PresetArt({ count, category, index }) {
   </div>;
 }
 
-export default function PresetGallery({ onView, onEdit, busy, runningKey }) {
+export default function PresetGallery({ onView, onEdit, onCreate, busy, runningKey }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('Todos');
   const filtered = useMemo(() => entries.filter(([, preset]) => {
@@ -44,8 +44,27 @@ export default function PresetGallery({ onView, onEdit, busy, runningKey }) {
   }), [query, category]);
 
   return <section className="catalog">
+    <div className="catalog-hero">
+      <div className="hero-copy">
+        <span className="hero-kicker"><span className="live-dot" /> COMECE A EXPLORAR</span>
+        <h2>Veja a gravidade<br /><em>ganhar forma.</em></h2>
+        <p>Parta de um cenário pronto, acompanhe as órbitas em 3D e compare a energia ao longo do tempo.</p>
+        <div className="hero-actions">
+          <button className="primary-button" type="button" disabled={busy} onClick={() => onView('satellite')}>▶ Visualizar exemplo</button>
+          <button className="secondary-button" type="button" onClick={onCreate}>Criar meu cenário <span aria-hidden="true">↗</span></button>
+        </div>
+        <div className="hero-facts"><span><strong>{entries.length}</strong> simulações prontas</span><span><strong>3D</strong> interativo</span><span><strong>SI</strong> unidades físicas</span></div>
+      </div>
+      <div className="hero-orbit" aria-hidden="true">
+        <div className="hero-grid" />
+        <div className="hero-ring hero-ring-one" /><div className="hero-ring hero-ring-two" /><div className="hero-ring hero-ring-three" />
+        <div className="hero-sun" /><div className="hero-planet hero-planet-one" /><div className="hero-planet hero-planet-two" /><div className="hero-planet hero-planet-three" />
+        <span className="hero-coordinate hero-coordinate-top">X + 0.00482 AU</span>
+        <span className="hero-coordinate hero-coordinate-bottom">Δt · VELOCITY VERLET</span>
+      </div>
+    </div>
     <div className="catalog-heading"><div><p className="eyebrow">BIBLIOTECA DE CENÁRIOS</p>
-      <h2>{entries.length} simulações para explorar</h2>
+      <h2>Encontre seu próximo experimento</h2>
       <p>Escolha um sistema e visualize a dinâmica orbital com um clique. Todos os cenários podem ser editados.</p></div>
       <span className="catalog-total">{filtered.length} de {entries.length}</span>
     </div>

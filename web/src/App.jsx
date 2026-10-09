@@ -82,25 +82,29 @@ export default function App() {
   const frame = dataset?.frames[index];
   return <div className="app-shell">
     <header className="topbar">
-      <div className="brand"><span className="brand-mark"><span /></span><div><strong>OrbitalSim</strong><small>Laboratório orbital</small></div></div>
-      <div className="top-actions"><span className="engine-pill"><span className="status-dot" /> FORTRAN · .NET 10 · REACT</span>
-        <button className="import-button" type="button" onClick={() => csvInput.current.click()}>↥ Importar CSV</button>
+      <div className="brand"><span className="brand-mark"><span /></span><div><strong>OrbitalSim</strong><small>Laboratório de dinâmica orbital</small></div></div>
+      <div className="top-actions"><span className="engine-pill"><span className="status-dot" /> Motor de simulação pronto</span>
+        <button className="import-button" type="button" onClick={() => csvInput.current.click()}>↥ <span>Importar resultados</span></button>
         <input ref={csvInput} type="file" accept=".csv" multiple hidden onChange={importCsv} />
       </div>
     </header>
     <main>
-      <div className="page-heading"><div><p className="eyebrow">DINÂMICA GRAVITACIONAL / N-BODY</p>
-        <h1>Explore sistemas orbitais.</h1>
-        <p className="heading-copy">Escolha uma simulação pronta ou defina cada corpo para calcular novas trajetórias.</p></div>
+      <div className="page-heading"><div><p className="eyebrow">PLATAFORMA DE SIMULAÇÃO · N-BODY</p>
+        <h1>{tab === 'catalog' ? <>O universo em <span>movimento.</span></> :
+          tab === 'editor' ? <>Desenhe sua <span>próxima órbita.</span></> :
+            <>Cada trajetória, <span>em detalhe.</span></>}</h1>
+        <p className="heading-copy">{tab === 'catalog' ? 'Explore sistemas prontos ou crie um experimento com suas próprias condições iniciais.' :
+          tab === 'editor' ? 'Defina corpos, massas e velocidades. O motor calcula a evolução do sistema.' :
+            'Acompanhe a evolução no tempo e confira os diagnósticos da simulação.'}</p></div>
         <span className="scenario-chip"><span className="chip-orbit" />{source || 'Novo cenário'}</span>
       </div>
       <nav className="workspace-tabs" aria-label="Área de trabalho">
-        <button type="button" className={tab === 'catalog' ? 'active' : ''} onClick={() => setTab('catalog')}>01 · Simulações prontas</button>
-        <button type="button" className={tab === 'editor' ? 'active' : ''} onClick={() => setTab('editor')}>02 · Criar cenário</button>
-        <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => setTab('results')}>03 · Explorar resultados</button>
+        <button type="button" className={tab === 'catalog' ? 'active' : ''} aria-current={tab === 'catalog' ? 'page' : undefined} onClick={() => setTab('catalog')}><span>01</span> Simulações prontas</button>
+        <button type="button" className={tab === 'editor' ? 'active' : ''} aria-current={tab === 'editor' ? 'page' : undefined} onClick={() => setTab('editor')}><span>02</span> Criar cenário</button>
+        <button type="button" className={tab === 'results' ? 'active' : ''} aria-current={tab === 'results' ? 'page' : undefined} onClick={() => setTab('results')}><span>03</span> Explorar resultados</button>
       </nav>
       {error && <div className="error-banner" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Fechar aviso">×</button></div>}
-      {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)} busy={busy} runningKey={runningKey} /> :
+      {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)} onCreate={() => setTab('editor')} busy={busy} runningKey={runningKey} /> :
       tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()} onBrowse={() => setTab('catalog')} busy={busy} onError={setError} /> :
         <div className="workspace-grid">
           <div className="viewer-column"><OrbitCanvas dataset={dataset} index={index} focus={focus} />
