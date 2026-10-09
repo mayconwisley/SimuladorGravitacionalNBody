@@ -93,11 +93,11 @@ página mantém a aba, o rascunho do editor e recalcula a última simulação.
 | Grupo | Cenários disponíveis |
 | --- | --- |
 | Órbitas | Terra e satélite; órbita baixa; órbita alta; órbita polar; Sol e Terra; prógrado e retrógrado; planos inclinados; ressonância 2:1. |
-| Coleções | Planeta e duas luas; quatro órbitas concêntricas; companheiros troianos; anel de oito; anel inclinado; nuvem de 24 corpos; sistemas de três e de seis planetas. |
+| Coleções | Marte e suas duas luas; quatro órbitas concêntricas; companheiros troianos; anel de oito; anel inclinado; nuvem de 24 corpos; sistemas de três e de seis planetas (Mercúrio a Saturno). |
 | Experimentos | Elipse suave; elipse acentuada; cometa didático; quase escape; trajetória de escape; transferência de Hohmann. |
 | Múltiplos | Estrelas binárias iguais; binárias desiguais; planeta circumbinário; dois planetas circumbinários; sistema triplo hierárquico; órbita em ferradura. |
 | Física | Precessão por achatamento (J2); decaimento por arrasto; precessão relativística; acreção de planetesimais; comparar integradores. |
-| Partículas | Anel e lua pastora; cinturão e Júpiter; colisão de galáxias. |
+| Partículas | Anel de Saturno e Mimas; cinturão e Júpiter; colisão de galáxias. |
 
 Todos usam unidades SI. Terra–satélite, Sol–Terra e a precessão por J2 usam
 valores aproximados; a atmosfera, a velocidade da luz reduzida e as massas

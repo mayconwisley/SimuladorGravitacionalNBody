@@ -32,3 +32,16 @@ test('modo repetição volta ao início depois da última amostra', () => {
   // Without loop the same advance stops at the last sample.
   assert.equal(advancePosition(196, 500, 12, 200), 200);
 });
+
+test('modo repetição atravessa a última amostra mesmo com avanços menores que uma amostra', () => {
+  // 60 fps at 1x: 16.7 ms × 12 samples/s = 0.2 sample per frame, over samples 0..160.
+  let position = 159.9;
+  const visited = [];
+  for (let frame = 0; frame < 12; frame++) {
+    position = advancePosition(position, 1000 / 60, 12, 160, { loop: true });
+    visited.push(Math.floor(position));
+  }
+  assert.ok(visited.includes(160), 'shows the last sample');
+  assert.equal(visited.at(-1), 1, 'wraps back to the start');
+  assert.ok(position >= 0 && position < 161);
+});

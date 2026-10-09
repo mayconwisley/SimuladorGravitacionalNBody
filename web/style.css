@@ -554,7 +554,7 @@ h1, h2, h3, p { margin: 0; }
 .scrubber:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.35); }
 .timeline-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .transport { display: flex; align-items: center; gap: 8px; }
-.icon-button.toggle.active { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
+.loop-button.active { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-border); }
 .play-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 136px; padding: 0 18px;
   color: #04211d; background: linear-gradient(180deg, #7ff3e0, var(--accent-strong)); border: 0; border-radius: 12px;

@@ -72,7 +72,7 @@ export default function Timeline({ dataset, playback }) {
           <Icon name={playing ? 'pause' : 'play'} size={18} /><span>{playing ? 'Pausar' : 'Reproduzir'}</span>
         </button>
         <button className="icon-button" type="button" aria-label="Próxima amostra" title="Próxima (→)" onClick={() => seek(index + 1)}><Icon name="stepForward" /></button>
-        <button className={`icon-button toggle${loop ? ' active' : ''}`} type="button" aria-pressed={loop}
+        <button className={`icon-button loop-button${loop ? ' active' : ''}`} type="button" aria-pressed={loop}
           aria-label="Repetir automaticamente" title={`Repetição automática (L): ${loop ? 'ligada' : 'desligada'}`}
           onClick={toggleLoop}><Icon name="repeat" /></button>
       </div>

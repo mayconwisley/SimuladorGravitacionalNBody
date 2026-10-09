@@ -92,11 +92,11 @@ export const presets = {
       body('Sol', 1.98847e30, [0, 0, 0], [0, 0, 0]),
       body('Terra', earthMass, [149597870700, 0, 0], [0, 29780, 0])
     ], { timeStepSeconds: 3600, steps: 8760, sampleEverySteps: 24 }),
-  planetMoons: preset('Planeta e duas luas', 'Coleções',
-    'Duas luas leves em raios diferentes ao redor de um planeta idealizado.', [
-      center('Planeta'),
-      orbiter('Lua interna', 1e17, 3e6),
-      orbiter('Lua externa', 2e17, 5e6, 135)
+  planetMoons: preset('Marte e suas duas luas', 'Coleções',
+    'Fobos e Deimos em raios diferentes ao redor de Marte, em escala idealizada.', [
+      center('Marte'),
+      orbiter('Fobos', 1e17, 3e6),
+      orbiter('Deimos', 2e17, 5e6, 135)
     ]),
   concentric: preset('Quatro órbitas concêntricas', 'Coleções',
     'Satélites em quatro raios mostram períodos orbitais distintos.', [
@@ -147,8 +147,8 @@ export const presets = {
       orbiter('Externo', 1e12, 3e6 * Math.pow(2, 2 / 3), 180)
     ], { timeStepSeconds: 10, steps: 3400, sampleEverySteps: 17 }),
   trojans: preset('Companheiros troianos', 'Coleções',
-    'Dois corpos leves começam a 60° de um planeta, na mesma faixa orbital.', [
-      center(), orbiter('Planeta', 1e19, 5e6),
+    'Dois corpos leves começam a 60° de Júpiter, na mesma faixa orbital (escala idealizada).', [
+      center('Sol'), orbiter('Júpiter', 1e19, 5e6),
       orbiter('Troiano L4', 1e10, 5e6, 60),
       orbiter('Troiano L5', 1e10, 5e6, -60)
     ], { view: 'rotating' }),
@@ -169,16 +169,16 @@ export const presets = {
           (index % 8) * 45 + Math.floor(index / 8) * 14))
     ], { timeStepSeconds: 12, steps: 2200, sampleEverySteps: 22 }),
   miniSolarThree: preset('Sistema de três planetas', 'Coleções',
-    'Planetas leves em três faixas ao redor de uma estrela idealizada.', [
-      center(),
-      orbiter('Planeta 1', 1e17, 3e6, 0),
-      orbiter('Planeta 2', 2e17, 4.8e6, 120),
-      orbiter('Planeta 3', 3e17, 7.2e6, 240)
+    'Mercúrio, Vênus e Terra em três faixas ao redor do Sol, em escala idealizada.', [
+      center('Sol'),
+      orbiter('Mercúrio', 1e17, 3e6, 0),
+      orbiter('Vênus', 2e17, 4.8e6, 120),
+      orbiter('Terra', 3e17, 7.2e6, 240)
     ]),
   miniSolarSix: preset('Sistema de seis planetas', 'Coleções',
-    'Seis órbitas de raios crescentes compõem um sistema ilustrativo.', [
-      center(), ...Array.from({ length: 6 }, (_, index) =>
-        orbiter(`Planeta ${index + 1}`, (index + 1) * 1e16,
+    'De Mercúrio a Saturno: seis órbitas de raios crescentes em escala idealizada.', [
+      center('Sol'), ...['Mercúrio', 'Vênus', 'Terra', 'Marte', 'Júpiter', 'Saturno'].map((name, index) =>
+        orbiter(name, (index + 1) * 1e16,
           2.7e6 + index * 1.1e6, index * 60))
     ]),
   equalBinary: preset('Estrelas binárias iguais', 'Múltiplos',
@@ -188,24 +188,24 @@ export const presets = {
     'A estrela mais leve descreve uma órbita maior ao redor do baricentro.', unequalBinary,
     { timeStepSeconds: 10, steps: 3000, sampleEverySteps: 15 }),
   circumbinary: preset('Planeta circumbinário', 'Múltiplos',
-    'Um planeta leve orbita o par de estrelas.', [
-      ...equalBinary, orbiter('Planeta', 1e16, 1.8e7, 90, 1, 0, 2e23)
+    'Kepler-16 b, o primeiro planeta circumbinário confirmado, orbita o par de estrelas (escala idealizada).', [
+      ...equalBinary, orbiter('Kepler-16 b', 1e16, 1.8e7, 90, 1, 0, 2e23)
     ], { timeStepSeconds: 10, steps: 4000, sampleEverySteps: 20 }),
   twoCircumbinary: preset('Dois planetas circumbinários', 'Múltiplos',
-    'Dois planetas observam a dança de uma estrela binária.', [
+    'Kepler-47 b e Kepler-47 c observam a dança de uma estrela binária (escala idealizada).', [
       ...equalBinary,
-      orbiter('Planeta interno', 1e16, 1.8e7, 90, 1, 0, 2e23),
-      orbiter('Planeta externo', 1e16, 2.6e7, 240, 1, 0, 2e23)
+      orbiter('Kepler-47 b', 1e16, 1.8e7, 90, 1, 0, 2e23),
+      orbiter('Kepler-47 c', 1e16, 2.6e7, 240, 1, 0, 2e23)
     ], { timeStepSeconds: 10, steps: 4500, sampleEverySteps: 25 }),
   hierarchicalTriple: preset('Sistema triplo hierárquico', 'Múltiplos',
     'Uma terceira estrela, mais leve e distante, orbita um par compacto.', [
       ...equalBinary, orbiter('Estrela C', 1e21, 2e7, 90, 1, 0, 2e23)
     ], { timeStepSeconds: 10, steps: 4000, sampleEverySteps: 20 }),
   horseshoe: preset('Órbita em ferradura', 'Múltiplos',
-    'No referencial girante, um corpo 1% fora da órbita do planeta desenha uma ferradura; outro, perto de L4, um girino.', [
-      center(), orbit('Planeta', 1e20, 'Estrela', 5e6),
-      orbit('Ferradura', 0, 'Estrela', 5.05e6, 0, { anomaly: 180 }),
-      orbit('Girino L4', 0, 'Estrela', 5.015e6, 0, { anomaly: 60 })
+    'No referencial girante, um corpo 1% fora da órbita da Terra desenha uma ferradura; outro, perto de L4, um girino (escala idealizada).', [
+      center('Sol'), orbit('Terra', 1e20, 'Sol', 5e6),
+      orbit('Ferradura', 0, 'Sol', 5.05e6, 0, { anomaly: 180 }),
+      orbit('Girino L4', 0, 'Sol', 5.015e6, 0, { anomaly: 60 })
     ], { timeStepSeconds: 180, steps: 20000, sampleEverySteps: 20, integrator: 'yoshida4', view: 'rotating' }),
   j2Precession: preset('Precessão por achatamento (J2)', 'Física',
     'O achatamento da Terra gira o plano das órbitas: a 45° cerca de 5°/dia para oeste, a 98° cerca de 1°/dia para leste (órbita heliossíncrona).', [
@@ -235,7 +235,7 @@ export const presets = {
   relativity: preset('Precessão relativística', 'Física',
     'Órbita de Mercúrio com a velocidade da luz reduzida a 1.000 km/s: a correção 1PN gira o periélio cerca de 2,4° por volta (2,6° pela fórmula de primeira ordem).', [
       body('Sol', sunMass, [0, 0, 0], [0, 0, 0]),
-      orbit('Planeta', 3.3e23, 'Sol', 5.79e10, 0.2056)
+      orbit('Mercúrio', 3.3e23, 'Sol', 5.79e10, 0.2056)
     ], { timeStepSeconds: 7598, steps: 20000, sampleEverySteps: 20, integrator: 'yoshida4',
       physics: { centralBody: 'Sol', lightSpeedMetersPerSecond: 1e6 } }),
   planetesimals: preset('Acreção de planetesimais', 'Física',
@@ -251,12 +251,12 @@ export const presets = {
     'Cometa muito excêntrico com passo grosso: o Verlet e o Yoshida mantêm a energia oscilando; o RK4 a deixa derivar.', [
       center(), orbit('Cometa', 1e11, 'Estrela', 6e6, 0.75, { anomaly: 180 })
     ], { timeStepSeconds: 240, steps: 6000, sampleEverySteps: 6, compare: true }),
-  ringShepherd: preset('Anel e lua pastora', 'Partículas',
-    '1.500 partículas formam um anel; uma lua massiva externa excita as órbitas em ressonância 2:1 (na faixa de 1,17 × 10⁸ m).', [
-      { name: 'Planeta', massKg: 5.683e26, positionMeters: [0, 0, 0], velocityMetersPerSecond: [0, 0, 0], radiusMeters: 6.0268e7 },
-      orbit('Lua pastora', 5e23, 'Planeta', 1.85e8, 0.02)
+  ringShepherd: preset('Anel de Saturno e Mimas', 'Partículas',
+    '1.500 partículas formam o anel de Saturno; Mimas, com massa ampliada (≈ 13.000×), excita as órbitas em ressonância 2:1 (na faixa de 1,17 × 10⁸ m, onde fica a divisão de Cassini).', [
+      { name: 'Saturno', massKg: 5.683e26, positionMeters: [0, 0, 0], velocityMetersPerSecond: [0, 0, 0], radiusMeters: 6.0268e7 },
+      orbit('Mimas (ampliada)', 5e23, 'Saturno', 1.85e8, 0.02)
     ], { timeStepSeconds: 300, steps: 20000, sampleEverySteps: 80, integrator: 'yoshida4',
-      particleGroups: [{ name: 'Anel', around: 'Planeta', count: 1500, innerRadiusMeters: 1e8, outerRadiusMeters: 1.45e8 }] }),
+      particleGroups: [{ name: 'Anel', around: 'Saturno', count: 1500, innerRadiusMeters: 1e8, outerRadiusMeters: 1.45e8 }] }),
   asteroidBelt: preset('Cinturão e Júpiter', 'Partículas',
     'Um Júpiter com massa exagerada (10×) agita o cinturão de asteroides; as órbitas em ressonância ganham excentricidade.', [
       body('Sol', sunMass, [0, 0, 0], [0, 0, 0]),
