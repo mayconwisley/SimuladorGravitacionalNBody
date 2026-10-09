@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using OrbitalSim.Application;
+using OrbitalSim.Application.DTOs;
+using OrbitalSim.Application.Interfaces;
 using OrbitalSim.Domain;
 
 namespace OrbitalSim.Infrastructure.Fortran;

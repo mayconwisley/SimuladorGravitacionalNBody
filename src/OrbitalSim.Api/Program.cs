@@ -1,22 +1,26 @@
 using Microsoft.Extensions.FileProviders;
 using OrbitalSim.Api;
 using OrbitalSim.Application;
+using OrbitalSim.Application.DTOs;
+using OrbitalSim.Application.UseCases;
 using OrbitalSim.Infrastructure.Fortran;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 1_048_576);
+builder.Services.AddApplication().AddFortranInfrastructure();
 var app = builder.Build();
 
 app.MapGet("/api/health", () => Results.Ok(new { status = "ready" }));
-app.MapPost("/api/simulations", async (ScenarioRequest request, CancellationToken cancellation) =>
+app.MapPost("/api/simulations", async (ScenarioInput request, RunSimulationUseCase simulation, CancellationToken cancellation) =>
 {
     try
     {
+        InteractiveScenarioLimits.Validate(request);
         var scenario = request.ToScenario();
         var samples = await Task.Run(() =>
         {
             var result = new List<SimulationSample>();
-            foreach (var sample in new SimulationRunner(new FortranOrbitEngine()).Run(scenario))
+            foreach (var sample in simulation.Execute(scenario))
             {
                 cancellation.ThrowIfCancellationRequested();
                 result.Add(sample);

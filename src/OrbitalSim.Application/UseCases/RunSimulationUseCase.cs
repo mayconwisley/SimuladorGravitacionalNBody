@@ -1,36 +1,12 @@
+using OrbitalSim.Application.DTOs;
+using OrbitalSim.Application.Interfaces;
 using OrbitalSim.Domain;
 
-namespace OrbitalSim.Application;
+namespace OrbitalSim.Application.UseCases;
 
-public readonly record struct DiagnosticValues(
-    double EnergyJoules,
-    Vector3d MomentumKgMetersPerSecond,
-    Vector3d AngularMomentumKgSquareMetersPerSecond);
-
-public sealed record BodyState(
-    string Name,
-    double MassKg,
-    Vector3d PositionMeters,
-    Vector3d VelocityMetersPerSecond);
-
-public sealed record SimulationSample(
-    int Step,
-    double TimeSeconds,
-    DiagnosticValues Diagnostics,
-    IReadOnlyList<BodyState> Bodies);
-
-public interface IOrbitEngine
+public sealed class RunSimulationUseCase(IOrbitEngine engine)
 {
-    void Step(int bodyCount, double[] masses, double[] positions, double[] velocities,
-        double timeStepSeconds, double gravity, double softeningMeters, int steps);
-
-    DiagnosticValues GetDiagnostics(int bodyCount, double[] masses,
-        double[] positions, double[] velocities, double gravity, double softeningMeters);
-}
-
-public sealed class SimulationRunner(IOrbitEngine engine)
-{
-    public IEnumerable<SimulationSample> Run(SimulationScenario scenario)
+    public IEnumerable<SimulationSample> Execute(SimulationScenario scenario)
     {
         scenario.Validate();
         int count = scenario.Bodies.Count;

@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using OrbitalSim.Application;
+using OrbitalSim.Application.DTOs;
 
 namespace OrbitalSim.Cli;
 

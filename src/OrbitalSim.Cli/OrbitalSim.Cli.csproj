@@ -8,6 +8,7 @@
   <ItemGroup>
     <ProjectReference Include="../OrbitalSim.Application/OrbitalSim.Application.csproj" />
     <ProjectReference Include="../OrbitalSim.Infrastructure.Fortran/OrbitalSim.Infrastructure.Fortran.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../../build/tdm-gcc/orbitalsim.dll" Link="orbitalsim.dll"

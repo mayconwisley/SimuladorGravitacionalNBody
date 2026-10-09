@@ -165,9 +165,11 @@ simulação; não se deve esperar energia exatamente constante a cada passo.
 ## Arquitetura
 
 ```text
-src/OrbitalSim.Cli/                    JSON, comandos, CSV e benchmark
-src/OrbitalSim.Api/                    HTTP local e entrega da interface compilada
-src/OrbitalSim.Application/            execução e amostragem
+src/OrbitalSim.Cli/                    leitura de JSON, comandos, CSV e benchmark
+src/OrbitalSim.Api/                    HTTP, limites interativos e interface compilada
+src/OrbitalSim.Application/DTOs/       contrato de cenário e resultados
+src/OrbitalSim.Application/Interfaces/ porta do motor numérico
+src/OrbitalSim.Application/UseCases/   execução e amostragem
 src/OrbitalSim.Domain/                 cenário, corpos e validação
 src/OrbitalSim.Infrastructure.Fortran/ P/Invoke e tradução de erros
 native/src/                           forças, Verlet, diagnósticos e ABI C
@@ -176,8 +178,18 @@ tests/native/                          testes Fortran
 tests/OrbitalSim.IntegrationTests/     testes .NET e interoperabilidade
 examples/                              cenários prontos
 benchmarks/                            metodologia do benchmark
-web/                                   formulário e visualização React/Vite
+web/src/ScenarioEditor.jsx             entrada de dados e importação de cenários
+web/src/Diagnostics.jsx                diagnósticos da trajetória
+web/src/App.jsx                        composição e estado da interface React
 ```
+
+Domain não referencia as camadas externas. Application contém o caso de uso
+`RunSimulationUseCase`, o contrato `IOrbitEngine` e a conversão compartilhada
+do cenário JSON; Infrastructure.Fortran implementa a porta. API e CLI fazem a
+composição com `AddApplication` e `AddFortranInfrastructure`. A API aplica os
+limites próprios da execução interativa antes de chamar o caso de uso; a CLI
+continua aceitando cenários maiores. Versões de pacotes NuGet ficam em
+`Directory.Packages.props`.
 
 A CLI e a API usam `LibraryImport` para chamar `os_step` e `os_diagnostics` da DLL
 Fortran. O [cabeçalho C](native/include/orbitalsim.h) descreve a ABI: `mass`

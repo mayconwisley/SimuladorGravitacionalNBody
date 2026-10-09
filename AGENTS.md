@@ -6,8 +6,13 @@ OrbitalSim is an N-body simulator. Keep numerical physics in `native/src/` and
 its stable C ABI in `native/src/orbital_c_api.f90` and
 `native/include/orbitalsim.h`. Native tests live in `tests/native/`. The .NET
 10 projects live in `src/` (Domain, Application, Infrastructure.Fortran, CLI,
-API). The React/Vite interface lives in `web/`. Keep request parsing in the
-API, scenario validation in Domain, and numerical work in Fortran. Do not
+API). The React/Vite interface lives in `web/`. Keep HTTP limits in the API,
+JSON file I/O in the CLI, shared input mapping and use cases in Application,
+scenario validation in Domain, and numerical work in Fortran. Put interfaces in
+`Application/Interfaces`, DTOs in `Application/DTOs`, and use cases in
+`Application/UseCases`. Use `AddApplication` and `AddFortranInfrastructure` at
+composition roots; centralize NuGet versions in `Directory.Packages.props`.
+Do not
 introduce UI or file I/O into the Fortran motor. Update `README.md` when the
 layout or workflow changes.
 Ready-to-run educational scenarios live in `web/src/presets.mjs`; keep them in
@@ -71,5 +76,7 @@ body count, steps, time per step, memory and numerical error.
 
 Use two-space indentation in Fortran and descriptive physical names. Keep the
 C ABI small, with explicit types and contiguous body-major xyz arrays. Favor
-small, focused changes. In change summaries, list verification commands and
+small, focused changes. Use one public C# type per file and file-scoped
+namespaces. Keep React forms, diagnostics, and orchestration in separate
+modules. In change summaries, list verification commands and
 results, plus numerical assumptions and any tolerance changes.

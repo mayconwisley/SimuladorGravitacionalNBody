@@ -1,23 +1,5 @@
 namespace OrbitalSim.Domain;
 
-public readonly record struct Vector3d(double X, double Y, double Z)
-{
-    public bool IsFinite => double.IsFinite(X) && double.IsFinite(Y) && double.IsFinite(Z);
-}
-
-public sealed record BodyDefinition(
-    string Name,
-    double MassKg,
-    Vector3d PositionMeters,
-    Vector3d VelocityMetersPerSecond);
-
-public sealed record SimulationConfig(
-    double Gravity,
-    double SofteningMeters,
-    double TimeStepSeconds,
-    int Steps,
-    int SampleEverySteps);
-
 public sealed record SimulationScenario(
     SimulationConfig Config,
     IReadOnlyList<BodyDefinition> Bodies)

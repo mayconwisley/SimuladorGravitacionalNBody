@@ -1,4 +1,7 @@
+using Microsoft.Extensions.DependencyInjection;
 using OrbitalSim.Application;
+using OrbitalSim.Application.DTOs;
+using OrbitalSim.Application.UseCases;
 using OrbitalSim.Domain;
 using OrbitalSim.Infrastructure.Fortran;
 
@@ -23,12 +26,42 @@ var scenario = new SimulationScenario(
          new Vector3d(0, -Math.Sqrt(0.5), 0)),
      new BodyDefinition("B", 1, new Vector3d(0.5, 0, 0),
          new Vector3d(0, Math.Sqrt(0.5), 0))]);
-SimulationSample[] samples = new SimulationRunner(engine).Run(scenario).ToArray();
+SimulationSample[] samples = new RunSimulationUseCase(engine).Execute(scenario).ToArray();
 Check(samples.Length == 4 && samples[0].Step == 0 && samples[1].Step == 4 &&
       samples[2].Step == 8 && samples[3].Step == 10,
     "sample schedule includes initial and final state");
 Check(samples[0].Bodies[0].PositionMeters.X == -0.5,
     "earlier sample remains unchanged");
+
+var input = new ScenarioInput
+{
+    Gravity = 1,
+    TimeStepSeconds = period / 10_000,
+    Steps = 10,
+    SampleEverySteps = 4,
+    Bodies =
+    [
+        new BodyInput { Name = "A", MassKg = 1, PositionMeters = [-0.5, 0, 0],
+            VelocityMetersPerSecond = [0, -Math.Sqrt(0.5), 0] },
+        new BodyInput { Name = "B", MassKg = 1, PositionMeters = [0.5, 0, 0],
+            VelocityMetersPerSecond = [0, Math.Sqrt(0.5), 0] }
+    ]
+};
+var mappedScenario = input.ToScenario();
+Check(mappedScenario.Config == scenario.Config && mappedScenario.Bodies.SequenceEqual(scenario.Bodies),
+    "shared JSON input maps to domain scenario");
+using (var provider = new ServiceCollection().AddApplication().AddFortranInfrastructure()
+    .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true }))
+{
+    Check(provider.GetRequiredService<RunSimulationUseCase>().Execute(input.ToScenario()).Count() == 4,
+        "dependency injection composes simulation use case");
+}
+Check(!typeof(SimulationScenario).Assembly.GetReferencedAssemblies()
+    .Any(reference => reference.Name?.StartsWith("OrbitalSim.") == true),
+    "domain has no outer-layer reference");
+Check(!typeof(RunSimulationUseCase).Assembly.GetReferencedAssemblies()
+    .Any(reference => reference.Name is "OrbitalSim.Infrastructure.Fortran" or "OrbitalSim.Api"),
+    "application has no infrastructure or API reference");
 
 position = new double[6];
 velocity = new double[6];

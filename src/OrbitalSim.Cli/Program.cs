@@ -1,5 +1,7 @@
 using System.Globalization;
+using Microsoft.Extensions.DependencyInjection;
 using OrbitalSim.Application;
+using OrbitalSim.Application.UseCases;
 using OrbitalSim.Infrastructure.Fortran;
 
 namespace OrbitalSim.Cli;
@@ -18,15 +20,21 @@ internal static class Program
             switch (args[0])
             {
                 case "run":
+                {
                     if (args.Length < 2 || args[1].StartsWith("--", StringComparison.Ordinal))
                         throw new ArgumentException("Provide a scenario JSON file.");
                     var runOptions = ParseOptions(args, 2, "--out");
                     string output = runOptions.GetValueOrDefault("--out") ?? "output";
                     var scenario = ScenarioFile.Load(args[1]);
+                    using var services = new ServiceCollection()
+                        .AddApplication()
+                        .AddFortranInfrastructure()
+                        .BuildServiceProvider();
                     CsvOutput.Write(output,
-                        new SimulationRunner(new FortranOrbitEngine()).Run(scenario));
+                        services.GetRequiredService<RunSimulationUseCase>().Execute(scenario));
                     Console.WriteLine($"Completed {scenario.Config.Steps} steps; results in {Path.GetFullPath(output)}");
                     return 0;
+                }
                 case "benchmark":
                     var benchmarkOptions = ParseOptions(args, 1,
                         "--bodies", "--steps", "--repeats", "--batch", "--out");
