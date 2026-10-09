@@ -10,6 +10,8 @@ API). The React/Vite interface lives in `web/`. Keep request parsing in the
 API, scenario validation in Domain, and numerical work in Fortran. Do not
 introduce UI or file I/O into the Fortran motor. Update `README.md` when the
 layout or workflow changes.
+Ready-to-run educational scenarios live in `web/src/presets.mjs`; keep them in
+SI units and within the API's body, step, and sample limits.
 
 ## Build and test
 
@@ -36,6 +38,8 @@ and run the local React app and API. Run `npm test --prefix web` to check form
 and CSV parsing, and `powershell -ExecutionPolicy Bypass -File
 .\scripts\smoke-api.ps1` after building Release to check HTTP execution. CI
 runs native, .NET integration, example, web, and API checks on Linux.
+Run `node scripts/verify-presets.mjs` against a running local API after changing
+the scenario gallery; it checks every preset through the Fortran motor.
 
 Do not report these commands as passing unless they were run successfully.
 If the toolchain is unavailable, state that explicitly and keep test sources

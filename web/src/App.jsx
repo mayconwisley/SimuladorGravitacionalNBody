@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { parseTrajectory, parseDiagnostics } from '../data.mjs';
 import OrbitCanvas, { bodyColor } from './OrbitCanvas.jsx';
+import PresetGallery from './PresetGallery.jsx';
 import { emptyBody, fromApi, fromScenario, presetDraft, presets, toScenario } from './scenario.mjs';
 
 function formatNumber(value, digits = 3) {
@@ -26,7 +27,7 @@ function TextField({ label, value, onChange, unit, hint }) {
   </label>;
 }
 
-function ScenarioEditor({ draft, setDraft, onRun, busy, onError }) {
+function ScenarioEditor({ draft, setDraft, onRun, onBrowse, busy, onError }) {
   const jsonInput = useRef(null);
   const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }));
   const updateBody = (id, patch) => setDraft(previous => ({ ...previous,
@@ -69,10 +70,11 @@ function ScenarioEditor({ draft, setDraft, onRun, busy, onError }) {
       </div>
       <p className="form-intro">Defina as condições iniciais. Todos os campos físicos usam o Sistema Internacional.</p>
       <div className="preset-row" aria-label="Cenários prontos">
-        {Object.entries(presets).map(([key, value]) =>
+        {['satellite', 'solar'].map(key =>
           <button type="button" key={key} onClick={() => { setDraft(presetDraft(key)); onError(''); }}>
-            ◉ {value.label}
+            ◉ {presets[key].label}
           </button>)}
+        <button type="button" onClick={onBrowse}>Ver todas as {Object.keys(presets).length} simulações →</button>
       </div>
       <div className="form-section-heading"><h3>Integração</h3><span>Velocity Verlet</span></div>
       <div className="config-grid">
@@ -164,7 +166,7 @@ function Diagnostics({ dataset, index }) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState('editor');
+  const [tab, setTab] = useState('catalog');
   const [draft, setDraft] = useState(() => presetDraft());
   const [dataset, setDataset] = useState(null);
   const [source, setSource] = useState('');
@@ -173,6 +175,7 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [runningKey, setRunningKey] = useState(null);
   const [error, setError] = useState('');
   const csvInput = useRef(null);
 
@@ -188,11 +191,11 @@ export default function App() {
     if (dataset && index >= dataset.frames.length - 1) setPlaying(false);
   }, [dataset, index]);
 
-  async function run() {
+  async function run(selectedDraft = draft, presetKey = null) {
     let scenario;
-    try { scenario = toScenario(draft); }
+    try { scenario = toScenario(selectedDraft); }
     catch (cause) { setError(cause.message); return; }
-    setError(''); setBusy(true); setPlaying(false);
+    setError(''); setBusy(true); setRunningKey(presetKey); setPlaying(false);
     try {
       let response;
       try {
@@ -205,11 +208,20 @@ export default function App() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Não foi possível executar a simulação.');
       setDataset(fromApi(result));
-      setSource(scenario.bodies.length <= 3 ? scenario.bodies.map(body => body.name).join(' / ') : `${scenario.bodies.length} corpos`);
+      setSource(presetKey ? presets[presetKey].label :
+        scenario.bodies.length <= 3 ? scenario.bodies.map(body => body.name).join(' / ') : `${scenario.bodies.length} corpos`);
       setIndex(0); setFocus(null); setTab('results');
     } catch (cause) {
       setError(`Falha ao executar: ${cause.message}`);
-    } finally { setBusy(false); }
+    } finally { setBusy(false); setRunningKey(null); }
+  }
+
+  function openPreset(key, visualize) {
+    const selected = presetDraft(key);
+    setDraft(selected);
+    setError('');
+    if (visualize) run(selected, key);
+    else setTab('editor');
   }
 
   async function importCsv(event) {
@@ -236,16 +248,18 @@ export default function App() {
     </header>
     <main>
       <div className="page-heading"><div><p className="eyebrow">DINÂMICA GRAVITACIONAL / N-BODY</p>
-        <h1>Crie. Simule. Explore.</h1>
-        <p className="heading-copy">Defina cada corpo e acompanhe a trajetória calculada pelo motor Fortran.</p></div>
+        <h1>Explore sistemas orbitais.</h1>
+        <p className="heading-copy">Escolha uma simulação pronta ou defina cada corpo para calcular novas trajetórias.</p></div>
         <span className="scenario-chip"><span className="chip-orbit" />{source || 'Novo cenário'}</span>
       </div>
       <nav className="workspace-tabs" aria-label="Área de trabalho">
-        <button type="button" className={tab === 'editor' ? 'active' : ''} onClick={() => setTab('editor')}>01 · Criar cenário</button>
-        <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => setTab('results')}>02 · Explorar resultados</button>
+        <button type="button" className={tab === 'catalog' ? 'active' : ''} onClick={() => setTab('catalog')}>01 · Simulações prontas</button>
+        <button type="button" className={tab === 'editor' ? 'active' : ''} onClick={() => setTab('editor')}>02 · Criar cenário</button>
+        <button type="button" className={tab === 'results' ? 'active' : ''} onClick={() => setTab('results')}>03 · Explorar resultados</button>
       </nav>
       {error && <div className="error-banner" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Fechar aviso">×</button></div>}
-      {tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={run} busy={busy} onError={setError} /> :
+      {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)} busy={busy} runningKey={runningKey} /> :
+      tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()} onBrowse={() => setTab('catalog')} busy={busy} onError={setError} /> :
         <div className="workspace-grid">
           <div className="viewer-column"><OrbitCanvas dataset={dataset} index={index} focus={focus} />
             {dataset && <div className="timeline-panel">

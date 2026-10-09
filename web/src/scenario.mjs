@@ -1,4 +1,6 @@
-const gravity = '6.67430e-11';
+import { presets } from './presets.mjs';
+
+export { presets };
 
 function body(name, massKg, positionMeters, velocityMetersPerSecond) {
   return { id: crypto.randomUUID(), name, massKg: String(massKg),
@@ -6,27 +8,9 @@ function body(name, massKg, positionMeters, velocityMetersPerSecond) {
     velocityMetersPerSecond: velocityMetersPerSecond.map(String) };
 }
 
-export const presets = {
-  satellite: {
-    label: 'Terra e satélite', gravity, softeningMeters: '0',
-    timeStepSeconds: '5', steps: '1200', sampleEverySteps: '20',
-    bodies: [
-      ['Terra', '5.972e24', [0, 0, 0], [0, 0, 0]],
-      ['Satélite', '1000', [7000000, 0, 0], [0, 7545.947, 0]]
-    ]
-  },
-  solar: {
-    label: 'Sol e Terra', gravity, softeningMeters: '0',
-    timeStepSeconds: '3600', steps: '8760', sampleEverySteps: '24',
-    bodies: [
-      ['Sol', '1.98847e30', [0, 0, 0], [0, 0, 0]],
-      ['Terra', '5.972e24', [149597870700, 0, 0], [0, 29780, 0]]
-    ]
-  }
-};
-
 export function presetDraft(key = 'satellite') {
   const preset = presets[key];
+  if (!preset) throw new Error(`Cenário pronto desconhecido: ${key}.`);
   return { ...preset, bodies: preset.bodies.map(values => body(...values)) };
 }
 

@@ -57,3 +57,4 @@ jobs:
             --data-binary @examples/earth-satellite.json \
             http://127.0.0.1:5080/api/simulations > build/ci-api.json
           python3 -c "import json; samples=json.load(open('build/ci-api.json'))['samples']; assert len(samples)==61; assert len(samples[0]['bodies'])==2"
+          node scripts/verify-presets.mjs

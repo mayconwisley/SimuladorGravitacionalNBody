@@ -1,12 +1,26 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { presetDraft, toScenario, fromScenario } from './scenario.mjs';
+import { presetDraft, presets, toScenario, fromScenario } from './scenario.mjs';
 
-test('preset contém todos os campos físicos válidos', () => {
-  for (const key of ['satellite', 'solar']) {
+test('ao menos 20 cenários prontos têm metadados, limites e corpos distintos', () => {
+  assert.ok(Object.keys(presets).length >= 20);
+  const labels = new Set();
+  for (const [key, preset] of Object.entries(presets)) {
     const scenario = toScenario(presetDraft(key));
-    assert.equal(scenario.bodies.length, 2);
-    assert.ok(scenario.bodies[1].positionMeters[0] > 0);
+    assert.ok(preset.label && preset.category && preset.description);
+    assert.ok(!labels.has(preset.label));
+    labels.add(preset.label);
+    assert.ok(scenario.bodies.length <= 32);
+    assert.ok(scenario.steps <= 20000);
+    assert.ok(2 + Math.floor((scenario.steps - 1) / scenario.sampleEverySteps) <= 1001);
+    if (scenario.softeningMeters === 0) {
+      for (let i = 0; i < scenario.bodies.length; i++) {
+        for (let j = i + 1; j < scenario.bodies.length; j++) {
+          assert.notDeepEqual(scenario.bodies[i].positionMeters,
+            scenario.bodies[j].positionMeters, `${key}: corpos coincidentes`);
+        }
+      }
+    }
   }
 });
 

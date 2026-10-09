@@ -35,8 +35,13 @@ app.MapPost("/api/simulations", async (ScenarioRequest request, CancellationToke
     }
 });
 
-var webRoot = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "web", "dist"));
-if (Directory.Exists(webRoot))
+var webRoot = new[]
+{
+    Path.Combine(builder.Environment.ContentRootPath, "..", "..", "web", "dist"),
+    Path.Combine(Directory.GetCurrentDirectory(), "web", "dist"),
+    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "web", "dist")
+}.Select(Path.GetFullPath).FirstOrDefault(Directory.Exists);
+if (webRoot is not null)
 {
     var files = new PhysicalFileProvider(webRoot);
     app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });

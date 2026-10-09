@@ -55,7 +55,9 @@ escuta somente no computador local. Use `-Port 5090` para escolher outra porta
 e encerre com `Ctrl+C`. Encerre a instância em execução antes de recompilar no
 Windows, pois a DLL nativa fica em uso pelo servidor.
 
-Em **Criar cenário**, escolha um exemplo ou preencha os campos de gravidade,
+Em **Simulações prontas**, busque ou filtre um dos 26 cenários e clique em
+**Visualizar** para executar e abrir a trajetória; **Editar dados** leva o
+cenário ao formulário. Em **Criar cenário**, preencha os campos de gravidade,
 suavização, passo de tempo, número de passos, intervalo de amostragem e os dados
 de cada corpo: nome, massa, posição XYZ e velocidade XYZ. Adicione ou remova
 corpos, importe ou exporte o cenário em JSON e clique em **Executar simulação**.
@@ -65,6 +67,18 @@ velocidade. Arraste a cena para girar, use a roda do mouse para aproximar,
 selecione um corpo para acompanhá-lo e escolha **Vista XY** ou **Enquadrar**.
 **Importar CSV** abre `trajectory.csv` e, opcionalmente, `diagnostics.csv` de
 uma execução anterior. O formulário envia os dados somente à API local.
+
+### Galeria de simulações
+
+| Grupo | Cenários disponíveis |
+| --- | --- |
+| Órbitas | Terra e satélite; órbita baixa; órbita alta; órbita polar; Sol e Terra; prógrado e retrógrado; planos inclinados; ressonância 2:1. |
+| Coleções | Planeta e duas luas; quatro órbitas concêntricas; companheiros troianos; anel de oito; anel inclinado; nuvem de 24 corpos; sistemas de três e de seis planetas. |
+| Experimentos | Elipse suave; elipse acentuada; cometa didático; quase escape; trajetória de escape. |
+| Múltiplos | Estrelas binárias iguais; binárias desiguais; planeta circumbinário; dois planetas circumbinários; sistema triplo hierárquico. |
+
+Todos usam unidades SI. Terra–satélite e Sol–Terra são aproximações; os demais
+são sistemas didáticos idealizados, não efemérides ou previsões astronômicas.
 
 A API limita cada execução web a 32 corpos, 20.000 passos e 1.001 amostras
 para manter a resposta interativa. A CLI permite cenários maiores e exporta
@@ -193,7 +207,11 @@ npm ci --prefix web
 npm test --prefix web
 npm run build --prefix web
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke-api.ps1
+node scripts/verify-presets.mjs
 ```
+
+`verify-presets.mjs` requer a API local em execução e verifica os 26 cenários,
+as amostras e os resultados numéricos finitos.
 
 O fluxo em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executa os
 testes nativos, de integração, do formulário, do leitor CSV e da API, além de
