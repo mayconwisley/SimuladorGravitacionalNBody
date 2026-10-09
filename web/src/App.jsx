@@ -144,7 +144,7 @@ export default function App() {
           </div>
           {dataset && <div className="info-strip">
             <Icon name="info" size={14} /><span>Distâncias ajustadas à tela; os valores físicos permanecem no cenário e nos CSVs.</span>
-            <span className="info-shortcuts"><Icon name="keyboard" size={14} /> Espaço reproduz · ← → navegam</span>
+            <span className="info-shortcuts"><Icon name="keyboard" size={14} /> Espaço reproduz · ← → navegam · L repete</span>
             <span className="mono info-count">{dataset.frames.length} amostras · {dataset.names.length} corpos</span>
           </div>}
         </>}

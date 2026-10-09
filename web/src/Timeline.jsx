@@ -10,7 +10,7 @@ function isEditable(target) {
 }
 
 export default function Timeline({ dataset, playback }) {
-  const { index, playing, speed, setSpeed, seek, toggle, reset } = playback;
+  const { index, playing, speed, setSpeed, loop, toggleLoop, seek, toggle, reset } = playback;
   const frame = dataset.frames[index];
   const lastFrame = dataset.frames.at(-1);
   const unit = clockUnit(lastFrame.time);
@@ -24,10 +24,11 @@ export default function Timeline({ dataset, playback }) {
       else if (event.key === 'ArrowLeft') { event.preventDefault(); seek(index - (event.shiftKey ? 10 : 1)); }
       else if (event.key === 'Home') { event.preventDefault(); reset(); }
       else if (event.key === 'End') { event.preventDefault(); seek(dataset.frames.length - 1); }
+      else if (event.key === 'l' || event.key === 'L') { event.preventDefault(); toggleLoop(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dataset, index, seek, toggle, reset]);
+  }, [dataset, index, seek, toggle, reset, toggleLoop]);
 
   return <div className="timeline">
     <div className="timeline-readout">
@@ -50,6 +51,9 @@ export default function Timeline({ dataset, playback }) {
           <Icon name={playing ? 'pause' : 'play'} size={18} /><span>{playing ? 'Pausar' : 'Reproduzir'}</span>
         </button>
         <button className="icon-button" type="button" aria-label="Próxima amostra" title="Próxima (→)" onClick={() => seek(index + 1)}><Icon name="stepForward" /></button>
+        <button className={`icon-button toggle${loop ? ' active' : ''}`} type="button" aria-pressed={loop}
+          aria-label="Repetir automaticamente" title={`Repetição automática (L): ${loop ? 'ligada' : 'desligada'}`}
+          onClick={toggleLoop}><Icon name="repeat" /></button>
       </div>
       <div className="speed-control" role="group" aria-label="Velocidade de reprodução">
         {speeds.map(value => <button type="button" key={value} className={speed === value ? 'active' : ''}

@@ -2,6 +2,7 @@ const paths = {
   play: <path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none" />,
   pause: <><rect x="6" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none" /><rect x="14" y="4.5" width="4" height="15" rx="1" fill="currentColor" stroke="none" /></>,
   restart: <><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1" /><path d="M3.5 4v4.5H8" /></>,
+  repeat: <><path d="M17 3.5 20 6.5l-3 3" /><path d="M4 11.5V10a3.5 3.5 0 0 1 3.5-3.5H20" /><path d="M7 20.5 4 17.5l3-3" /><path d="M20 12.5V14a3.5 3.5 0 0 1-3.5 3.5H4" /></>,
   stepBack: <><path d="M18 5 9 12l9 7z" /><path d="M6 5v14" /></>,
   stepForward: <><path d="m6 5 9 7-9 7z" /><path d="M18 5v14" /></>,
   upload: <><path d="M12 15V4" /><path d="m7 9 5-5 5 5" /><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" /></>,

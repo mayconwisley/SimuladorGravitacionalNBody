@@ -23,3 +23,12 @@ test('índice fica no intervalo do conjunto atual', () => {
   assert.equal(clampIndex(NaN, 60), 0);
   assert.equal(clampIndex(5, 0), 0);
 });
+
+test('modo repetição volta ao início depois da última amostra', () => {
+  // 200 s at 12 samples/s from sample 195 of 0..200: 195 + 2.4 = 197.4, still inside.
+  assert.equal(advancePosition(195, 200, 12, 200, { loop: true }), 197.4);
+  // 196 + 6 = 202 → wraps over 201 samples (0..200) to sample 1.
+  assert.equal(advancePosition(196, 500, 12, 200, { loop: true }), 1);
+  // Without loop the same advance stops at the last sample.
+  assert.equal(advancePosition(196, 500, 12, 200), 200);
+});

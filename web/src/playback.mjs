@@ -1,8 +1,11 @@
 // Fractional sample position after `elapsedMs` of playback, kept inside [0, lastIndex].
 // requestAnimationFrame timestamps can precede the start time, so negative elapsed time is ignored.
-export function advancePosition(position, elapsedMs, samplesPerSecond, lastIndex) {
+// With `loop`, the last sample is shown for one sample period and playback wraps to the start.
+export function advancePosition(position, elapsedMs, samplesPerSecond, lastIndex, { loop = false } = {}) {
   const step = Math.max(0, elapsedMs) / 1000 * samplesPerSecond;
-  return clampIndex(position + step, lastIndex);
+  const next = position + step;
+  if (loop && lastIndex > 0 && Number.isFinite(next)) return clampIndex(next % (lastIndex + 1), lastIndex);
+  return clampIndex(next, lastIndex);
 }
 
 export function clampIndex(value, lastIndex) {
