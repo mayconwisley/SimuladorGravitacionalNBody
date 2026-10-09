@@ -1,0 +1,21 @@
+{
+  "gravity": 6.67430e-11,
+  "softeningMeters": 0,
+  "timeStepSeconds": 5,
+  "steps": 1200,
+  "sampleEverySteps": 20,
+  "bodies": [
+    {
+      "name": "Earth",
+      "massKg": 5.972e24,
+      "positionMeters": [0, 0, 0],
+      "velocityMetersPerSecond": [0, 0, 0]
+    },
+    {
+      "name": "Satellite",
+      "massKg": 1000,
+      "positionMeters": [7000000, 0, 0],
+      "velocityMetersPerSecond": [0, 7545.947, 0]
+    }
+  ]
+}

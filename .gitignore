@@ -1,0 +1,7 @@
+/build/
+*.mod
+*.smod
+**/bin/
+**/obj/
+/output/
+/benchmarks/results.csv

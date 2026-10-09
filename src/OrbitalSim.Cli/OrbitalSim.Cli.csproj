@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../OrbitalSim.Application/OrbitalSim.Application.csproj" />
+    <ProjectReference Include="../OrbitalSim.Infrastructure.Fortran/OrbitalSim.Infrastructure.Fortran.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../build/tdm-gcc/orbitalsim.dll" Link="orbitalsim.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('../../build/tdm-gcc/orbitalsim.dll')" />
+    <None Include="../../build/orbitalsim.dll" Link="orbitalsim.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="!Exists('../../build/tdm-gcc/orbitalsim.dll') And Exists('../../build/orbitalsim.dll')" />
+    <None Include="../../build/liborbitalsim.so" Link="liborbitalsim.so"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('../../build/liborbitalsim.so')" />
+    <None Include="../../build/liborbitalsim.dylib" Link="liborbitalsim.dylib"
+          CopyToOutputDirectory="PreserveNewest"
+          Condition="Exists('../../build/liborbitalsim.dylib')" />
+  </ItemGroup>
+</Project>
