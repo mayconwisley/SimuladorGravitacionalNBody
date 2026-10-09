@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import Icon from './Icons.jsx';
+import { formatTime } from './format.mjs';
 import { presets } from './scenario.mjs';
 
 const entries = Object.entries(presets);
@@ -12,7 +13,9 @@ function normalized(value) {
 }
 
 function durationLabel(preset) {
-  const hours = Number(preset.steps) * Number(preset.timeStepSeconds) / 3600;
+  const seconds = Number(preset.steps) * Number(preset.timeStepSeconds);
+  if (seconds >= 2 * 365.25 * 86400) return formatTime(seconds); // years and beyond
+  const hours = seconds / 3600;
   if (hours >= 48) return `${(hours / 24).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} dias`;
   return `${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
 }

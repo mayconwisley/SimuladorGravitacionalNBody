@@ -239,6 +239,14 @@ h1, h2, h3, p { margin: 0; }
 
 .page { width: 100%; max-width: 1600px; margin: 0 auto; padding: 36px var(--gutter) 64px; flex: 1; animation: page-in .35s var(--ease); }
 @keyframes page-in { from { opacity: 0; transform: translateY(6px); } }
+.site-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap;
+  width: 100%; max-width: 1600px; margin: 0 auto; padding: 20px var(--gutter) 28px;
+  color: var(--text-3); font-size: 12.5px; border-top: 1px solid var(--border);
+}
+.site-footer strong { color: var(--text-2); font-weight: 600; }
+.site-footer-brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.site-footer-brand img { border-radius: 5px; }
 .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
 .page-heading h1 { margin-top: 10px; font-size: clamp(28px, 3.2vw, 40px); font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; }
 .lead { margin-top: 10px; max-width: 640px; color: var(--text-2); font-size: 15px; line-height: 1.6; }

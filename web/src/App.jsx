@@ -12,6 +12,7 @@ import Icon from './Icons.jsx';
 import ErrorBoundary from './ErrorBoundary.jsx';
 import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
+import SiteFooter from './SiteFooter.jsx';
 import { fromScenario, integrators, limits, presetDraft, presets, toScenario } from './scenario.mjs';
 import { appendSamples, createDataset, energyDriftSeries, fromApi, suggestedTimeStep } from './dataset.mjs';
 import { runSimulation, streamSimulation } from './simulationClient.mjs';
@@ -332,6 +333,7 @@ export default function App() {
         </>}
       </ErrorBoundary>
     </main>
+    <SiteFooter />
 
     {error && <div className="toast" role="alert">
       <Icon name="alert" size={18} /><span>{error}</span>
