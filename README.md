@@ -1,73 +1,60 @@
 # OrbitalSim
 
-Simulador gravitacional N-body com motor de cálculo em Fortran moderna e
-aplicação de linha de comando em .NET 10. A gravitação é calculada por pares;
-Velocity Verlet integra posições e velocidades com passo fixo. A CLI lê um
-cenário JSON e exporta trajetória, diagnósticos e resumo. A biblioteca nativa
-também expõe uma ABI C pequena para outros clientes.
+Simulador gravitacional **N-body** com motor numérico em Fortran moderna e
+aplicação de linha de comando em **.NET 10**. O motor calcula a atração entre
+todos os pares de corpos e integra as órbitas com Velocity Verlet. A aplicação
+lê cenários em JSON e gera trajetórias e diagnósticos em arquivos simples de
+analisar.
 
-## Estrutura
+O projeto já executa simulações locais, inclui testes nativos e de integração e
+oferece um comando de benchmark. API HTTP e interface React não fazem parte da
+versão atual.
 
-- `native/src/`: forças, integração, diagnósticos e ABI C.
-- `native/include/orbitalsim.h`: contrato da biblioteca compartilhada.
-- `src/OrbitalSim.Domain/`: cenário, corpos, unidades e validação.
-- `src/OrbitalSim.Application/`: execução e amostragem da simulação.
-- `src/OrbitalSim.Infrastructure.Fortran/`: P/Invoke com `LibraryImport`.
-- `src/OrbitalSim.Cli/`: entrada JSON, exportação CSV/JSON e benchmarks.
-- `tests/native/` e `tests/OrbitalSim.IntegrationTests/`: testes nativos e .NET.
-- `examples/`: cenários prontos.
+## Início rápido no Windows
 
-## Requisitos e build no Windows
+Pré-requisitos:
 
-Requisitos: .NET SDK 10 e GNU Fortran. O script abaixo usa por padrão
-`C:\Programas\TDM-GCC-64\bin\gfortran.exe`. A partir da raiz do projeto:
+- .NET SDK 10;
+- GNU Fortran do TDM-GCC em `C:\Programas\TDM-GCC-64\bin\gfortran.exe`.
+
+Na raiz do repositório, compile o motor e a solução .NET e execute os testes:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1
 ```
 
-O script compila a DLL e os testes Fortran, executa os testes nativos, restaura
-e compila a solução .NET em Release e executa os testes de integração. Para um
-compilador em outro local, passe `-Compiler "C:\caminho\gfortran.exe"`.
-Para reconstruir somente o motor, execute `scripts/build-tdm.ps1`.
-
-Alternativamente, com CMake 3.20+, Ninja e um compilador Fortran disponíveis:
-
-```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-ctest --test-dir build --output-on-failure
-dotnet restore OrbitalSim.sln -m:1 -p:NuGetAudit=false
-dotnet build OrbitalSim.sln -c Release --no-restore -m:1
-dotnet run --project tests/OrbitalSim.IntegrationTests -c Release --no-build
-```
-
-No Windows, o terminal [MSYS2 UCRT64](https://www.msys2.org/) pode fornecer
-GNU Fortran, CMake e Ninja:
-
-```sh
-pacman -Syu
-pacman -S --needed mingw-w64-ucrt-x86_64-gcc-fortran mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
-```
-
-## Executar uma simulação
+Se o compilador estiver em outro local, informe seu caminho:
 
 ```powershell
-dotnet run --project src/OrbitalSim.Cli -c Release --no-build -- run examples/earth-satellite.json --out output/earth-satellite
+powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1 -Compiler "C:\caminho\para\gfortran.exe"
 ```
 
-O diretório de saída terá:
+Execute o cenário de exemplo:
 
-- `trajectory.csv`: uma linha por corpo e amostra, com posição e velocidade.
-- `diagnostics.csv`: energia, momento linear e momento angular por amostra.
-- `summary.json`: energia inicial/final, deriva e quantidade de passos/amostras.
+```powershell
+dotnet run --project src\OrbitalSim.Cli -c Release --no-build -- run examples\earth-satellite.json --out output\earth-satellite
+```
 
-O CSV inclui o estado inicial, estados a cada `sampleEverySteps` e o estado
-final, mesmo quando o último intervalo é menor. A saída é escrita
-sequencialmente; o uso de memória cresce com o número de corpos, não com o
-número de amostras.
+Os arquivos serão criados em `output\earth-satellite`. O caminho após `--out`
+pode ser alterado para cada execução.
 
-Formato do cenário:
+## Resultados da simulação
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `trajectory.csv` | Uma linha por corpo e amostra: passo, tempo, nome, massa, posição e velocidade. |
+| `diagnostics.csv` | Uma linha por amostra: energia total, momento linear e momento angular. |
+| `summary.json` | Quantidade de corpos, passos e amostras; tempo final; energia inicial e final; deriva de energia. |
+
+A primeira amostra representa o estado inicial. Depois, o programa registra o
+estado a cada `sampleEverySteps` passos e sempre inclui o último passo, mesmo
+quando o intervalo final é menor. A exportação é sequencial: a memória usada
+para amostras não cresce com a duração da simulação.
+
+## Criar um cenário
+
+Copie e edite [o exemplo Terra–satélite](examples/earth-satellite.json). O
+arquivo usa esta estrutura:
 
 ```json
 {
@@ -93,42 +80,113 @@ Formato do cenário:
 }
 ```
 
-Use unidades SI: kg, m, s e `gravity` em m³/(kg·s²). As massas devem ser
-positivas; posições e velocidades são vetores `[x,y,z]`. Nomes dos corpos
-devem ser únicos. Escolha um passo pequeno em relação ao período orbital e
-examine `diagnostics.csv` para avaliar a precisão. Com `softeningMeters = 0`,
-corpos coincidentes geram erro.
+| Campo | Significado e unidade |
+| --- | --- |
+| `gravity` | Constante gravitacional $G$, em m³/(kg·s²); deve ser positiva. |
+| `softeningMeters` | Comprimento de suavização $\epsilon$, em m; zero usa a força newtoniana entre posições distintas. |
+| `timeStepSeconds` | Duração fixa de cada passo, em s; deve ser positiva. |
+| `steps` | Número total de passos; inteiro positivo. |
+| `sampleEverySteps` | Intervalo de amostragem; inteiro positivo. |
+| `bodies` | Corpos com nome único, massa positiva em kg, posição em m e velocidade em m/s. |
 
-## Benchmark
+Posição e velocidade são vetores `[x, y, z]`. Todos os números devem ser
+finitos. Com suavização zero, corpos na mesma posição causam erro. Para melhorar
+a precisão, reduza o passo de tempo e compare a trajetória e os diagnósticos.
 
-```powershell
-dotnet run --project src/OrbitalSim.Cli -c Release --no-build -- benchmark --bodies 2,100,1000 --steps 100 --repeats 5 --batch 10 --out benchmarks/results.csv
+## Método numérico
+
+Para os corpos $i$ e $j$, com $\Delta\mathbf r=\mathbf r_j-\mathbf r_i$,
+o motor usa a aceleração
+
+$$
+\mathbf a_i = G\sum_{j\ne i} m_j
+\frac{\mathbf r_j-\mathbf r_i}
+{\left(\|\mathbf r_j-\mathbf r_i\|^2+\epsilon^2\right)^{3/2}}.
+$$
+
+O potencial usado no diagnóstico é coerente com a mesma suavização:
+
+$$
+U=-\sum_{i<j}\frac{Gm_im_j}
+{\sqrt{\|\mathbf r_j-\mathbf r_i\|^2+\epsilon^2}}.
+$$
+
+Cada passo de **Velocity Verlet** calcula acelerações nas posições antiga e
+nova. O custo é **O(N²)** em tempo por passo e **O(N)** em memória adicional.
+Energia, momento linear e momento angular ajudam a avaliar a qualidade da
+simulação; não se deve esperar energia exatamente constante a cada passo.
+
+## Arquitetura
+
+```text
+src/OrbitalSim.Cli/                    JSON, comandos, CSV e benchmark
+src/OrbitalSim.Application/            execução e amostragem
+src/OrbitalSim.Domain/                 cenário, corpos e validação
+src/OrbitalSim.Infrastructure.Fortran/ P/Invoke e tradução de erros
+native/src/                           forças, Verlet, diagnósticos e ABI C
+native/include/orbitalsim.h           contrato da biblioteca nativa
+tests/native/                          testes Fortran
+tests/OrbitalSim.IntegrationTests/     testes .NET e interoperabilidade
+examples/                              cenários prontos
+benchmarks/                            metodologia do benchmark
 ```
 
-O benchmark informa tempo, passos por segundo, interações por segundo,
-alocações gerenciadas e deriva relativa de energia. Veja
-[benchmarks/README.md](benchmarks/README.md) para a metodologia. O arquivo
-`benchmarks/results.csv` é local e ignorado pelo controle de versão.
+A CLI usa `LibraryImport` para chamar `os_step` e `os_diagnostics` da DLL
+Fortran. O [cabeçalho C](native/include/orbitalsim.h) descreve a ABI: `mass`
+contém `N` valores `double`; `pos` e `vel` contêm `3N` valores contíguos na
+ordem `x, y, z` de cada corpo. `os_step` só altera os buffers quando retorna
+sucesso. A interface retorna códigos de erro para entrada inválida, corpos
+coincidentes sem suavização, resultado não finito ou falha de alocação.
 
-## Modelo numérico e ABI
+## Testes e benchmark
 
-Para `delta = r_j - r_i`, a aceleração usa
-`G*m_j*delta/(|delta|² + eps²)^(3/2)`. A energia potencial correspondente é
-`-G*m_i*m_j/sqrt(|delta|² + eps²)`. `eps=0` recupera a força newtoniana entre
-corpos distintos. Cada passo de Velocity Verlet calcula a aceleração nas
-posições antiga e nova. O custo é O(N²) em tempo por passo e O(N) em memória
-adicional. Não há colisão/fusão, passo adaptativo ou aproximação para N grande.
+O comando `build-all.ps1` executa os testes Fortran e os testes de integração
+.NET. Para reconstruir somente a parte nativa:
 
-O cabeçalho [native/include/orbitalsim.h](native/include/orbitalsim.h) define
-`os_step` e `os_diagnostics`. `mass` contém N valores `double`; `pos` e `vel`
-contêm `3*N` valores contíguos, na ordem `x,y,z` por corpo. `os_step` só altera
-os buffers em sucesso. Códigos: 0 sucesso, 1 entrada inválida, 2 corpos
-coincidentes sem suavização, 3 resultado não finito, 4 falha de alocação.
-Ponteiros nulos ou buffers menores que o contrato violam a ABI; o adaptador
-.NET valida seus tamanhos antes de chamar o código nativo.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-tdm.ps1
+```
 
-## Estado e limites
+Os testes cobrem órbita circular de dois corpos, convergência, conservação,
+movimento de um corpo, separação zero, preservação dos buffers em erro e chamada
+da DLL pelo .NET.
 
-O motor Fortran, a CLI .NET e os benchmarks estão implementados. Não há API
-HTTP nem interface React nesta versão; React permanece opcional. Para uso
-científico, valide passo, unidades, suavização e invariantes em cada cenário.
+Para medir o desempenho do caminho .NET → Fortran:
+
+```powershell
+dotnet run --project src\OrbitalSim.Cli -c Release --no-build -- benchmark --bodies 2,100,1000 --steps 100 --repeats 5 --batch 10
+```
+
+O comando imprime tempo, passos por segundo, interações por segundo, alocações
+gerenciadas e deriva relativa de energia. Use `--out caminho.csv` para salvar
+os resultados. Veja [a metodologia](benchmarks/README.md) antes de comparar
+máquinas ou versões.
+
+## Build alternativo com CMake
+
+Com CMake 3.20+, Ninja e um compilador Fortran compatível disponíveis:
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+ctest --test-dir build --output-on-failure
+dotnet restore OrbitalSim.sln -m:1 -p:NuGetAudit=false
+dotnet build OrbitalSim.sln -c Release --no-restore -m:1
+dotnet run --project tests/OrbitalSim.IntegrationTests -c Release --no-build
+```
+
+No Windows, o [MSYS2 UCRT64](https://www.msys2.org/) é uma opção para instalar
+GNU Fortran, CMake e Ninja. O script `build-all.ps1` é o caminho testado neste
+projeto com TDM-GCC.
+
+## Limites atuais
+
+O simulador usa corpos pontuais, passo fixo e cálculo direto entre pares. Não
+implementa colisões ou fusões, passo adaptativo, paralelismo, aproximações para
+grandes valores de N, API HTTP nem interface gráfica. Avalie as unidades,
+condições iniciais, suavização e deriva dos diagnósticos antes de usar os
+resultados em um estudo.
+
+## Licença
+
+Distribuído sob a [licença MIT](LICENSE).
