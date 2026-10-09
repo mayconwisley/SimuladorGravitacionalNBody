@@ -180,7 +180,13 @@ examples/                              cenários prontos
 benchmarks/                            metodologia do benchmark
 web/src/ScenarioEditor.jsx             entrada de dados e importação de cenários
 web/src/Diagnostics.jsx                diagnósticos da trajetória
+web/src/OrbitCanvas.jsx                cena 3D, câmera, trajetórias e escala
+web/src/Timeline.jsx                   linha do tempo, reprodução e atalhos
+web/src/BodyList.jsx                   seleção do corpo acompanhado
+web/src/usePlayback.js                 reprodução das amostras por quadro
+web/src/useEngineStatus.js             estado da API via /api/health
 web/src/App.jsx                        composição e estado da interface React
+web/style.css                          tokens de design e estilos da interface
 ```
 
 Domain não referencia as camadas externas. Application contém o caso de uso

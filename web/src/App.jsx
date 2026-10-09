@@ -1,43 +1,56 @@
 import { useEffect, useRef, useState } from 'react';
 import { parseTrajectory, parseDiagnostics } from '../data.mjs';
-import OrbitCanvas, { bodyColor } from './OrbitCanvas.jsx';
+import OrbitCanvas from './OrbitCanvas.jsx';
 import PresetGallery from './PresetGallery.jsx';
 import ScenarioEditor from './ScenarioEditor.jsx';
 import Diagnostics from './Diagnostics.jsx';
-import { formatNumber, formatTime } from './format.mjs';
+import BodyList from './BodyList.jsx';
+import Timeline from './Timeline.jsx';
+import Icon from './Icons.jsx';
+import useEngineStatus from './useEngineStatus.js';
+import usePlayback from './usePlayback.js';
 import { fromApi, presetDraft, presets, toScenario } from './scenario.mjs';
+
+const tabs = [
+  { key: 'catalog', label: 'Simulações', icon: 'grid' },
+  { key: 'editor', label: 'Criar cenário', icon: 'sliders' },
+  { key: 'results', label: 'Resultados', icon: 'orbit' }
+];
+
+const headings = {
+  editor: { eyebrow: 'Editor de cenário', title: 'Desenhe sua próxima órbita',
+    copy: 'Defina corpos, massas e velocidades em unidades SI. O motor Fortran calcula a evolução do sistema.' },
+  results: { eyebrow: 'Explorar resultados', title: 'Cada trajetória, em detalhe',
+    copy: 'Acompanhe a evolução no tempo, siga um corpo e confira os diagnósticos de conservação.' }
+};
+
+const engineLabels = { online: 'Motor pronto', offline: 'API indisponível', checking: 'Conectando…' };
 
 export default function App() {
   const [tab, setTab] = useState('catalog');
   const [draft, setDraft] = useState(() => presetDraft());
   const [dataset, setDataset] = useState(null);
   const [source, setSource] = useState('');
-  const [index, setIndex] = useState(0);
   const [focus, setFocus] = useState(null);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
   const [busy, setBusy] = useState(false);
   const [runningKey, setRunningKey] = useState(null);
   const [error, setError] = useState('');
   const csvInput = useRef(null);
+  const engine = useEngineStatus();
+  const playback = usePlayback(dataset?.frames.length ?? 0);
 
-  useEffect(() => {
-    if (!playing || !dataset) return;
-    const timer = setInterval(() => setIndex(previous => {
-      return Math.min(dataset.frames.length - 1, previous + 1);
-    }), 1000 / (12 * speed));
-    return () => clearInterval(timer);
-  }, [playing, dataset, speed]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [tab]);
 
-  useEffect(() => {
-    if (dataset && index >= dataset.frames.length - 1) setPlaying(false);
-  }, [dataset, index]);
+  function show(nextDataset, label) {
+    setDataset(nextDataset); setSource(label); setFocus(null);
+    playback.reset(); setTab('results');
+  }
 
   async function run(selectedDraft = draft, presetKey = null) {
     let scenario;
     try { scenario = toScenario(selectedDraft); }
     catch (cause) { setError(cause.message); return; }
-    setError(''); setBusy(true); setRunningKey(presetKey); setPlaying(false);
+    setError(''); setBusy(true); setRunningKey(presetKey); playback.reset();
     try {
       let response;
       try {
@@ -49,10 +62,8 @@ export default function App() {
       }
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Não foi possível executar a simulação.');
-      setDataset(fromApi(result));
-      setSource(presetKey ? presets[presetKey].label :
+      show(fromApi(result), presetKey ? presets[presetKey].label :
         scenario.bodies.length <= 3 ? scenario.bodies.map(body => body.name).join(' / ') : `${scenario.bodies.length} corpos`);
-      setIndex(0); setFocus(null); setTab('results');
     } catch (cause) {
       setError(`Falha ao executar: ${cause.message}`);
     } finally { setBusy(false); setRunningKey(null); }
@@ -73,69 +84,73 @@ export default function App() {
       if (!trajectory) throw new Error('Selecione trajectory.csv. diagnostics.csv é opcional.');
       const parsed = parseTrajectory(await trajectory.text());
       const diagnostics = files.get('diagnostics.csv');
-      setDataset({ ...parsed, diagnostics: parseDiagnostics(diagnostics ? await diagnostics.text() : '') });
-      setSource('Dados importados'); setIndex(0); setFocus(null); setPlaying(false); setTab('results'); setError('');
+      show({ ...parsed, diagnostics: parseDiagnostics(diagnostics ? await diagnostics.text() : '') }, 'Dados importados');
+      setError('');
     } catch (cause) { setError(cause.message); }
     event.target.value = '';
   }
 
-  const frame = dataset?.frames[index];
+  const heading = headings[tab];
   return <div className="app-shell">
+    {busy && <div className="progress-bar" role="progressbar" aria-label="Calculando simulação" />}
     <header className="topbar">
-      <div className="brand"><span className="brand-mark"><span /></span><div><strong>OrbitalSim</strong><small>Laboratório de dinâmica orbital</small></div></div>
-      <div className="top-actions"><span className="engine-pill"><span className="status-dot" /> Motor de simulação pronto</span>
-        <button className="import-button" type="button" onClick={() => csvInput.current.click()}>↥ <span>Importar resultados</span></button>
-        <input ref={csvInput} type="file" accept=".csv" multiple hidden onChange={importCsv} />
+      <div className="topbar-inner">
+        <button type="button" className="brand" onClick={() => setTab('catalog')} aria-label="OrbitalSim, ir para simulações">
+          <span className="brand-mark" aria-hidden="true"><span /></span>
+          <span className="brand-text"><strong>OrbitalSim</strong><small>Laboratório orbital</small></span>
+        </button>
+        <nav className="nav-tabs" aria-label="Área de trabalho">
+          {tabs.map(item => <button type="button" key={item.key} className={tab === item.key ? 'active' : ''}
+            aria-current={tab === item.key ? 'page' : undefined} onClick={() => setTab(item.key)}>
+            <Icon name={item.icon} /><span>{item.label}</span>
+            {item.key === 'results' && dataset && <span className="nav-dot" aria-label="resultado disponível" />}
+          </button>)}
+        </nav>
+        <div className="top-actions">
+          <span className={`engine-status ${engine}`} title="Estado da API local"><span className="status-dot" />{engineLabels[engine]}</span>
+          <button className="button subtle" type="button" onClick={() => csvInput.current.click()} title="Importar trajectory.csv e diagnostics.csv">
+            <Icon name="upload" size={15} /><span className="hide-small">Importar CSV</span></button>
+          <input ref={csvInput} type="file" accept=".csv" multiple hidden onChange={importCsv} />
+        </div>
       </div>
     </header>
-    <main>
-      <div className="page-heading"><div><p className="eyebrow">PLATAFORMA DE SIMULAÇÃO · N-BODY</p>
-        <h1>{tab === 'catalog' ? <>O universo em <span>movimento.</span></> :
-          tab === 'editor' ? <>Desenhe sua <span>próxima órbita.</span></> :
-            <>Cada trajetória, <span>em detalhe.</span></>}</h1>
-        <p className="heading-copy">{tab === 'catalog' ? 'Explore sistemas prontos ou crie um experimento com suas próprias condições iniciais.' :
-          tab === 'editor' ? 'Defina corpos, massas e velocidades. O motor calcula a evolução do sistema.' :
-            'Acompanhe a evolução no tempo e confira os diagnósticos da simulação.'}</p></div>
-        <span className="scenario-chip"><span className="chip-orbit" />{source || 'Novo cenário'}</span>
-      </div>
-      <nav className="workspace-tabs" aria-label="Área de trabalho">
-        <button type="button" className={tab === 'catalog' ? 'active' : ''} aria-current={tab === 'catalog' ? 'page' : undefined} onClick={() => setTab('catalog')}><span>01</span> Simulações prontas</button>
-        <button type="button" className={tab === 'editor' ? 'active' : ''} aria-current={tab === 'editor' ? 'page' : undefined} onClick={() => setTab('editor')}><span>02</span> Criar cenário</button>
-        <button type="button" className={tab === 'results' ? 'active' : ''} aria-current={tab === 'results' ? 'page' : undefined} onClick={() => setTab('results')}><span>03</span> Explorar resultados</button>
-      </nav>
-      {error && <div className="error-banner" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Fechar aviso">×</button></div>}
-      {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)} onCreate={() => setTab('editor')} busy={busy} runningKey={runningKey} /> :
-      tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()} onBrowse={() => setTab('catalog')} busy={busy} onError={setError} /> :
-        <div className="workspace-grid">
-          <div className="viewer-column"><OrbitCanvas dataset={dataset} index={index} focus={focus} />
-            {dataset && <div className="timeline-panel">
-              <div className="timeline-meta"><div className="time-display"><span className="meta-label">TEMPO SIMULADO</span><strong>{formatTime(frame.time)}</strong></div>
-                <div className="step-display"><span className="meta-label">PASSO</span><strong>{frame.step} / {dataset.frames.at(-1).step}</strong></div></div>
-              <input id="timeline" type="range" min="0" max={dataset.frames.length - 1} value={index}
-                aria-label="Linha do tempo" onChange={event => { setPlaying(false); setIndex(Number(event.target.value)); }} />
-              <div className="playback-row"><div className="playback-left">
-                <button className="icon-button" type="button" aria-label="Voltar ao início" onClick={() => { setPlaying(false); setIndex(0); }}>↺</button>
-                <button className="play-button" type="button" onClick={() => { if (index === dataset.frames.length - 1) setIndex(0); setPlaying(!playing); }}>
-                  {playing ? 'Ⅱ Pausar' : '▶ Reproduzir'}</button><span className="timeline-end">Fim: {formatTime(dataset.frames.at(-1).time)}</span></div>
-                <div className="speed-control"><label htmlFor="speed-select">Velocidade</label><select id="speed-select" value={speed} onChange={event => setSpeed(Number(event.target.value))}>
-                  {[0.25, 0.5, 1, 2, 4, 8].map(value => <option key={value} value={value}>{String(value).replace('.', ',')}×</option>)}</select></div>
-              </div>
-            </div>}
-          </div>
-          {dataset && <aside className="sidebar"><section className="side-card objects-card">
-            <div className="section-heading"><div><p className="eyebrow">CENÁRIO</p><h2>Corpos celestes</h2></div><span className="count-pill">{dataset.names.length}</span></div>
-            <p className="side-description">Selecione um corpo para acompanhá-lo.</p>
-            <div className="body-list">{dataset.names.slice(0, 30).map((name, colorIndex) =>
-              <button type="button" key={name} className={`body-item${focus === name ? ' active' : ''}`} onClick={() => setFocus(name)}>
-                <span className="body-swatch" style={{ background: bodyColor(colorIndex), color: bodyColor(colorIndex) }} />
-                <span><span className="body-name">{name}</span><span className="body-mass">{formatNumber(dataset.frames[0].bodies.get(name).mass)} kg</span></span><span className="body-arrow">↗</span>
-              </button>)}
-              {dataset.names.length > 30 && <p className="side-description">Mais {dataset.names.length - 30} corpos visíveis na cena.</p>}
+
+    <main className={`page page-${tab}`}>
+      {heading && <div className="page-heading">
+        <div><p className="eyebrow">{heading.eyebrow}</p><h1>{heading.title}</h1><p className="lead">{heading.copy}</p></div>
+        {tab === 'results' && dataset && <span className="scenario-pill"><Icon name="orbit" size={14} />{source}</span>}
+      </div>}
+
+      {tab === 'catalog' ? <PresetGallery onView={key => openPreset(key, true)} onEdit={key => openPreset(key, false)}
+        onCreate={() => setTab('editor')} busy={busy} runningKey={runningKey} /> :
+      tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()}
+        onBrowse={() => setTab('catalog')} busy={busy} onError={setError} /> :
+        <>
+          <div className={`results-layout${dataset ? '' : ' empty'}`}>
+            <div className="viewer">
+              <OrbitCanvas dataset={dataset} index={playback.index} focus={focus} source={source}
+                emptyActions={<div className="empty-actions">
+                  <button className="button primary" type="button" onClick={() => setTab('catalog')}><Icon name="grid" size={14} /> Ver simulações</button>
+                  <button className="button subtle" type="button" onClick={() => csvInput.current.click()}><Icon name="upload" size={14} /> Importar CSV</button>
+                </div>} />
+              {dataset && <Timeline dataset={dataset} playback={playback} />}
             </div>
-            <button type="button" className={`focus-center${focus === null ? ' active' : ''}`} onClick={() => setFocus(null)}>◎ Centro do sistema</button>
-          </section><Diagnostics dataset={dataset} index={index} /></aside>}
-        </div>}
-      {tab === 'results' && dataset && <div className="info-strip"><span className="info-symbol">i</span><span>Distâncias ajustadas à tela; os valores físicos permanecem no cenário e nos CSVs.</span><span id="sample-count">{dataset.frames.length} amostras · {dataset.names.length} corpos</span></div>}
+            {dataset && <aside className="results-aside">
+              <BodyList dataset={dataset} index={playback.index} focus={focus} setFocus={setFocus} />
+              <Diagnostics dataset={dataset} index={playback.index} />
+            </aside>}
+          </div>
+          {dataset && <div className="info-strip">
+            <Icon name="info" size={14} /><span>Distâncias ajustadas à tela; os valores físicos permanecem no cenário e nos CSVs.</span>
+            <span className="info-shortcuts"><Icon name="keyboard" size={14} /> Espaço reproduz · ← → navegam</span>
+            <span className="mono info-count">{dataset.frames.length} amostras · {dataset.names.length} corpos</span>
+          </div>}
+        </>}
     </main>
+
+    {error && <div className="toast" role="alert">
+      <Icon name="alert" size={18} /><span>{error}</span>
+      <button type="button" className="icon-button" onClick={() => setError('')} aria-label="Fechar aviso"><Icon name="close" /></button>
+    </div>}
   </div>;
 }

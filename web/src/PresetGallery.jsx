@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
+import Icon from './Icons.jsx';
 import { presets } from './scenario.mjs';
 
 const entries = Object.entries(presets);
 const categories = ['Todos', ...new Set(entries.map(([, preset]) => preset.category))];
+const reducedMotion = typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 function normalized(value) {
-  return value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return value.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
 function durationLabel(preset) {
@@ -14,22 +17,58 @@ function durationLabel(preset) {
   return `${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
 }
 
+function ellipsePath(cx, cy, rx, ry) {
+  return `M${cx - rx} ${cy} a${rx} ${ry} 0 1 0 ${2 * rx} 0 a${rx} ${ry} 0 1 0 ${-2 * rx} 0`;
+}
+
+const heroOrbits = [
+  { rx: 88, ry: 34, dur: 9, r: 6, color: '#93c5fd' },
+  { rx: 146, ry: 56, dur: 16, r: 8, color: '#5eead4' },
+  { rx: 206, ry: 80, dur: 27, r: 5, color: '#c4b5fd' }
+];
+
+function HeroOrbit() {
+  return <svg className="hero-orbit" viewBox="0 0 480 320" aria-hidden="true">
+    <defs>
+      <radialGradient id="hero-sun" cx="40%" cy="38%" r="65%">
+        <stop offset="0%" stopColor="#fff7dc" /><stop offset="45%" stopColor="#f8c27a" /><stop offset="100%" stopColor="#ef7d55" />
+      </radialGradient>
+      <radialGradient id="hero-halo"><stop offset="0%" stopColor="#f8b26a" stopOpacity=".45" /><stop offset="100%" stopColor="#f8b26a" stopOpacity="0" /></radialGradient>
+    </defs>
+    <g transform="rotate(-16 240 160)">
+      {heroOrbits.map((orbit, i) => <path key={i} className="hero-ring" d={ellipsePath(240, 160, orbit.rx, orbit.ry)} />)}
+      <circle cx="240" cy="160" r="70" fill="url(#hero-halo)" />
+      <circle cx="240" cy="160" r="20" fill="url(#hero-sun)" className="hero-sun" />
+      {heroOrbits.map((orbit, i) => <g key={i}>
+        <circle r={orbit.r * 2.6} fill={orbit.color} opacity=".16" cx={reducedMotion ? 240 + orbit.rx : 0} cy={reducedMotion ? 160 : 0}>
+          {!reducedMotion && <animateMotion dur={`${orbit.dur}s`} repeatCount="indefinite" path={ellipsePath(240, 160, orbit.rx, orbit.ry)} begin={`-${i * 3.7}s`} />}
+        </circle>
+        <circle r={orbit.r} fill={orbit.color} cx={reducedMotion ? 240 + orbit.rx : 0} cy={reducedMotion ? 160 : 0}>
+          {!reducedMotion && <animateMotion dur={`${orbit.dur}s`} repeatCount="indefinite" path={ellipsePath(240, 160, orbit.rx, orbit.ry)} begin={`-${i * 3.7}s`} />}
+        </circle>
+      </g>)}
+    </g>
+  </svg>;
+}
+
 function PresetArt({ count, category, index }) {
   const visible = Math.min(count - 1, 5);
-  return <div className={`preset-art preset-art-${category === 'Múltiplos' ? 'binary' : 'orbit'}`} aria-hidden="true">
-    <span className="art-number">{String(index + 1).padStart(2, '0')}</span>
+  return <div className={`preset-art${category === 'Múltiplos' ? ' preset-art-binary' : ''}`} aria-hidden="true">
+    <span className="art-number mono">{String(index + 1).padStart(2, '0')}</span>
     <svg viewBox="0 0 240 118" preserveAspectRatio="xMidYMid meet">
-      <ellipse cx="120" cy="59" rx="48" ry="24" />
-      <ellipse cx="120" cy="59" rx="80" ry="40" />
-      <ellipse cx="120" cy="59" rx="109" ry="53" />
-      <circle className="art-star" cx="120" cy="59" r="8" />
-      {Array.from({ length: visible }, (_, dot) => {
-        const angle = dot * 2.399 + index * 0.48;
-        const radiusX = [48, 80, 109][dot % 3];
-        const radiusY = [24, 40, 53][dot % 3];
-        return <circle className={`art-dot art-dot-${dot % 4}`} key={dot}
-          cx={120 + Math.cos(angle) * radiusX} cy={59 + Math.sin(angle) * radiusY} r={dot ? 3 : 4} />;
-      })}
+      <g className="art-system">
+        <ellipse cx="120" cy="59" rx="48" ry="24" />
+        <ellipse cx="120" cy="59" rx="80" ry="40" />
+        <ellipse cx="120" cy="59" rx="109" ry="53" />
+        <circle className="art-star" cx="120" cy="59" r="8" />
+        {Array.from({ length: visible }, (_, dot) => {
+          const angle = dot * 2.399 + index * 0.48;
+          const radiusX = [48, 80, 109][dot % 3];
+          const radiusY = [24, 40, 53][dot % 3];
+          return <circle className={`art-dot art-dot-${dot % 4}`} key={dot}
+            cx={120 + Math.cos(angle) * radiusX} cy={59 + Math.sin(angle) * radiusY} r={dot ? 3 : 4} />;
+        })}
+      </g>
     </svg>
   </div>;
 }
@@ -44,56 +83,65 @@ export default function PresetGallery({ onView, onEdit, onCreate, busy, runningK
   }), [query, category]);
 
   return <section className="catalog">
-    <div className="catalog-hero">
+    <div className="hero">
       <div className="hero-copy">
-        <span className="hero-kicker"><span className="live-dot" /> COMECE A EXPLORAR</span>
-        <h2>Veja a gravidade<br /><em>ganhar forma.</em></h2>
-        <p>Parta de um cenário pronto, acompanhe as órbitas em 3D e compare a energia ao longo do tempo.</p>
+        <span className="kicker"><Icon name="sparkle" size={13} /> Motor Fortran · Velocity Verlet</span>
+        <h1>O universo em <span className="gradient-text">movimento.</span></h1>
+        <p>Parta de um cenário pronto, acompanhe as órbitas em 3D e confira a conservação de energia ao longo do tempo.</p>
         <div className="hero-actions">
-          <button className="primary-button" type="button" disabled={busy} onClick={() => onView('satellite')}>▶ Visualizar exemplo</button>
-          <button className="secondary-button" type="button" onClick={onCreate}>Criar meu cenário <span aria-hidden="true">↗</span></button>
+          <button className="button primary large" type="button" disabled={busy} onClick={() => onView('satellite')}>
+            {busy && runningKey === 'satellite' ? <span className="spinner" /> : <Icon name="play" />} Visualizar exemplo</button>
+          <button className="button ghost large" type="button" onClick={onCreate}>Criar meu cenário <Icon name="arrowRight" /></button>
         </div>
-        <div className="hero-facts"><span><strong>{entries.length}</strong> simulações prontas</span><span><strong>3D</strong> interativo</span><span><strong>SI</strong> unidades físicas</span></div>
+        <dl className="hero-stats">
+          <div><dt>Simulações prontas</dt><dd className="mono">{entries.length}</dd></div>
+          <div><dt>Visualização</dt><dd className="mono">3D</dd></div>
+          <div><dt>Unidades</dt><dd className="mono">SI</dd></div>
+        </dl>
       </div>
-      <div className="hero-orbit" aria-hidden="true">
-        <div className="hero-grid" />
-        <div className="hero-ring hero-ring-one" /><div className="hero-ring hero-ring-two" /><div className="hero-ring hero-ring-three" />
-        <div className="hero-sun" /><div className="hero-planet hero-planet-one" /><div className="hero-planet hero-planet-two" /><div className="hero-planet hero-planet-three" />
-        <span className="hero-coordinate hero-coordinate-top">X + 0.00482 AU</span>
-        <span className="hero-coordinate hero-coordinate-bottom">Δt · VELOCITY VERLET</span>
-      </div>
+      <div className="hero-visual"><div className="hero-grid" /><HeroOrbit />
+        <span className="hero-caption mono">Δt · integração simplética</span></div>
     </div>
-    <div className="catalog-heading"><div><p className="eyebrow">BIBLIOTECA DE CENÁRIOS</p>
-      <h2>Encontre seu próximo experimento</h2>
-      <p>Escolha um sistema e visualize a dinâmica orbital com um clique. Todos os cenários podem ser editados.</p></div>
-      <span className="catalog-total">{filtered.length} de {entries.length}</span>
+
+    <div className="section-title">
+      <div><p className="eyebrow">Biblioteca de cenários</p><h2>Encontre seu próximo experimento</h2>
+        <p>Visualize a dinâmica com um clique. Todos os cenários podem ser editados.</p></div>
     </div>
     <div className="catalog-toolbar">
-      <label className="catalog-search"><span>Buscar simulações</span>
-        <input value={query} onChange={event => setQuery(event.target.value)}
-          placeholder="Ex.: binária, elipse, satélite..." type="search" /></label>
-      <div className="catalog-filters" aria-label="Filtrar categoria">
+      <label className="search-field">
+        <Icon name="search" />
+        <input value={query} onChange={event => setQuery(event.target.value)} aria-label="Buscar simulações"
+          placeholder="Buscar: binária, elipse, satélite…" type="search" />
+      </label>
+      <div className="chips" role="group" aria-label="Filtrar categoria">
         {categories.map(item => <button type="button" key={item}
-          className={category === item ? 'active' : ''} aria-pressed={category === item}
+          className={`chip${category === item ? ' active' : ''}`} aria-pressed={category === item}
           onClick={() => setCategory(item)}>{item}</button>)}
       </div>
+      <span className="result-count mono">{filtered.length}/{entries.length}</span>
     </div>
     {filtered.length ? <div className="catalog-grid">{filtered.map(([key, preset]) => {
       const index = entries.findIndex(([item]) => item === key);
-      return <article className="preset-card" key={key}>
+      const running = busy && runningKey === key;
+      return <article className={`preset-card${running ? ' running' : ''}`} key={key}>
         <PresetArt count={preset.bodies.length} category={preset.category} index={index} />
-        <div className="preset-content"><span className="preset-category">{preset.category}</span>
+        <div className="preset-body">
+          <span className="preset-category">{preset.category}</span>
           <h3>{preset.label}</h3><p>{preset.description}</p>
-          <div className="preset-facts"><span>{preset.bodies.length} corpos</span><span>{durationLabel(preset)}</span></div>
+          <div className="preset-facts">
+            <span><Icon name="layers" size={13} />{preset.bodies.length} corpos</span>
+            <span><Icon name="clock" size={13} />{durationLabel(preset)}</span>
+          </div>
           <div className="preset-actions">
-            <button className="primary-button" type="button" disabled={busy}
-              onClick={() => onView(key)}>{busy && runningKey === key ? 'Calculando...' : '▶ Visualizar'}</button>
-            <button className="secondary-button" type="button" disabled={busy}
-              onClick={() => onEdit(key)}>Editar dados</button>
+            <button className="button primary" type="button" disabled={busy} onClick={() => onView(key)}>
+              {running ? <><span className="spinner" /> Calculando…</> : <><Icon name="play" size={14} /> Visualizar</>}</button>
+            <button className="button subtle" type="button" disabled={busy} onClick={() => onEdit(key)}>
+              <Icon name="sliders" size={14} /> Editar</button>
           </div>
         </div>
       </article>;
-    })}</div> : <div className="catalog-empty">Nenhuma simulação encontrada. Tente outro termo ou categoria.</div>}
-    <p className="catalog-note">Cenários didáticos em unidades SI. “Terra e satélite” e “Sol e Terra” usam valores aproximados; os demais são sistemas idealizados.</p>
+    })}</div> : <div className="empty-state"><Icon name="search" size={22} />
+      <strong>Nenhuma simulação encontrada</strong><span>Tente outro termo ou categoria.</span></div>}
+    <p className="footnote"><Icon name="info" size={14} /> Cenários didáticos em unidades SI. “Terra e satélite” e “Sol e Terra” usam valores aproximados; os demais são sistemas idealizados.</p>
   </section>;
 }
