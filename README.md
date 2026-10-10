@@ -1,7 +1,29 @@
+<p align="center"><img src="web/public/favicon.svg" width="96" height="96" alt="Logo do OrbitalSim: corpo central e órbita inclinada"></p>
+
 # OrbitalSim
 
-Simulador gravitacional **N-body** com motor numérico em Fortran moderna,
-API e aplicação de linha de comando em **.NET 10**, e interface **React**.
+**Simulador gravitacional N-body com motor Fortran, API .NET e interface React.**
+
+[![Fortran](https://img.shields.io/badge/Fortran-2008-734F96?logo=fortran&logoColor=white)](native/src/)
+[![.NET](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](OrbitalSim.sln)
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](web/package.json)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)](web/package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.12-5FA04E?logo=nodedotjs&logoColor=white)](web/package.json)
+[![CMake](https://img.shields.io/badge/CMake-%E2%89%A53.20-064F8C?logo=cmake&logoColor=white)](CMakeLists.txt)
+[![CI](https://github.com/mayconwisley/SimuladorGravitacionalNBody/actions/workflows/ci.yml/badge.svg)](https://github.com/mayconwisley/SimuladorGravitacionalNBody/actions/workflows/ci.yml)
+[![Licença MIT](https://img.shields.io/badge/Licen%C3%A7a-MIT-2E8B57)](LICENSE)
+
+## Visão geral
+
+O OrbitalSim combina um motor numérico em Fortran 2008, uma API e uma CLI em
+.NET 10 e uma interface React 19 com Vite 8. A arquitetura mantém os cálculos
+físicos no motor nativo, expostos à aplicação por uma ABI C estável.
+
+**Nesta página:** [Início rápido](#início-rápido-no-windows) ·
+[Interface web](#abrir-a-interface-web) · [Visual Studio](#iniciar-pelo-visual-studio) ·
+[Cenários](#criar-um-cenário) · [Método numérico](#método-numérico) ·
+[Arquitetura](#arquitetura) · [Testes](#testes-e-benchmark)
+
 O motor calcula a atração entre todos os pares de corpos com massa e integra as
 órbitas com Velocity Verlet, Yoshida de 4ª ordem ou Runge-Kutta 4. Também
 simula partículas de teste sem massa, achatamento (J2), arrasto atmosférico,
@@ -23,7 +45,8 @@ Pré-requisitos:
 - GNU Fortran do TDM-GCC em `C:\Programas\TDM-GCC-64\bin\gfortran.exe`;
 - Node.js 22.12 ou superior para compilar a interface.
 
-Na raiz do repositório, compile o motor e a solução .NET e execute os testes:
+Na raiz do repositório, compile o motor e a solução .NET e execute os testes
+nativos e de integração:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1
@@ -46,8 +69,8 @@ pode ser alterado para cada execução.
 
 ### Abrir a interface web
 
-Na raiz do projeto, um comando compila e testa o motor, a API e a interface e
-inicia o servidor local:
+Na raiz do projeto, este comando compila e testa o motor, a API e a interface,
+depois inicia o servidor local:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\start-web.ps1
@@ -57,6 +80,31 @@ Abra [http://127.0.0.1:5080](http://127.0.0.1:5080) no navegador. O servidor
 escuta somente no computador local. Use `-Port 5090` para escolher outra porta
 e encerre com `Ctrl+C`. Encerre a instância em execução antes de recompilar no
 Windows, pois a DLL nativa fica em uso pelo servidor.
+
+### Iniciar pelo Visual Studio
+
+Após uma compilação nativa e um build do frontend, selecione
+`OrbitalSim.Api` como projeto de inicialização e execute o perfil `http` pelo
+**Start** do Visual Studio. A API serve os arquivos de `web/dist` em
+[http://127.0.0.1:5080](http://127.0.0.1:5080). O perfil atual tem
+`launchBrowser: false`: abra o endereço manualmente. Para preparar essa forma
+de execução em um clone novo:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build-all.ps1
+npm ci --prefix web
+npm run build --prefix web
+```
+
+Ao alterar o frontend, repita `npm run build --prefix web` para atualizar a
+versão servida pela API. Durante o desenvolvimento com recarga automática,
+use o [servidor do Vite](#desenvolvimento-da-interface).
+
+A DLL `orbitalsim.dll` é produzida em `build/tdm-gcc/` e copiada para a saída
+da API pelo projeto .NET. Por ser gerada, não é versionada. A pasta `out/`,
+quando criada pelo suporte a CMake do Visual Studio, também contém arquivos
+locais de configuração e build; ela não faz parte do código-fonte nem é usada
+pelos scripts de build documentados aqui.
 
 Cada aba tem um endereço próprio (`/`, `/editor`, `/resultados`, `/manual`); recarregar a
 página mantém a aba, o rascunho do editor e recalcula a última simulação.
@@ -366,6 +414,8 @@ testes nativos, de integração, do formulário, do leitor CSV e da API, além d
 gerar os arquivos do cenário de exemplo em Linux. Os resultados locais em
 `build/`, `output/`, `web/dist/` e `benchmarks/results.csv` são ignorados pelo
 Git e podem ser recriados pelos comandos acima.
+
+### Desenvolvimento da interface
 
 Durante o desenvolvimento da interface, mantenha a API e o Vite abertos em
 terminais separados, após compilar o motor:
