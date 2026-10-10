@@ -1,3 +1,4 @@
+using System.Buffers;
 using OrbitalSim.Application.DTOs;
 using OrbitalSim.Application.Interfaces;
 using OrbitalSim.Domain;
@@ -55,25 +56,34 @@ public sealed class FortranOrbitEngine : IOrbitEngine
             throw new ArgumentException("Steps must be positive and the event capacity nonnegative.");
         NativeOptions native = ToNative(options);
         NativeReport report = default;
-        var events = new NativeEvent[eventCapacity];
-        fixed (double* mass = state.Masses, radius = state.Radii, drag = state.DragAreaPerMass,
-               pos = state.Positions, vel = state.Velocities, acc = state.Accelerations)
-        fixed (int* active = state.Active)
-        fixed (NativeEvent* buffer = events)
+        // Advance runs once per sample; a pooled event buffer avoids allocating it on every call.
+        NativeEvent[] events = ArrayPool<NativeEvent>.Shared.Rent(Math.Max(1, eventCapacity));
+        EngineEvent[] found;
+        try
         {
-            int status = NativeMethods.Advance(state.Count, mass, radius, drag, active, pos, vel, acc,
-                state.AccelerationsReady ? 1 : 0, timeStepSeconds, gravity, softeningMeters, steps,
-                &native, &report, eventCapacity > 0 ? buffer : null, eventCapacity);
-            ThrowOnError(status);
+            fixed (double* mass = state.Masses, radius = state.Radii, drag = state.DragAreaPerMass,
+                   pos = state.Positions, vel = state.Velocities, acc = state.Accelerations)
+            fixed (int* active = state.Active)
+            fixed (NativeEvent* buffer = events)
+            {
+                int status = NativeMethods.Advance(state.Count, mass, radius, drag, active, pos, vel, acc,
+                    state.AccelerationsReady ? 1 : 0, timeStepSeconds, gravity, softeningMeters, steps,
+                    &native, &report, eventCapacity > 0 ? buffer : null, eventCapacity);
+                ThrowOnError(status);
+            }
+            found = report.EventCount == 0 ? [] : new EngineEvent[report.EventCount];
+            for (int i = 0; i < found.Length; i++)
+            {
+                NativeEvent item = events[i];
+                found[i] = new EngineEvent((SimulationEventKind)item.Kind, item.Step, item.Body,
+                    item.Other, item.DistanceMeters);
+            }
+        }
+        finally
+        {
+            ArrayPool<NativeEvent>.Shared.Return(events);
         }
         state.AccelerationsReady = true;
-        var found = new EngineEvent[report.EventCount];
-        for (int i = 0; i < found.Length; i++)
-        {
-            NativeEvent item = events[i];
-            found[i] = new EngineEvent((SimulationEventKind)item.Kind, item.Step, item.Body,
-                item.Other, item.DistanceMeters);
-        }
         return new AdvanceResult(new EngineReport(
             OrNull(report.MinSeparationMeters), OrNull(report.MinDynamicalTimeSeconds),
             OrNull(report.SuggestedTimeStepSeconds), OrNull(report.MassiveSuggestedTimeStepSeconds),
@@ -86,14 +96,13 @@ public sealed class FortranOrbitEngine : IOrbitEngine
         ArgumentNullException.ThrowIfNull(state);
         NativeOptions native = ToNative(options);
         double kinetic = 0, potential = 0;
-        var momentum = new double[3];
-        var angular = new double[3];
-        fixed (double* mass = state.Masses, pos = state.Positions, vel = state.Velocities,
-               p = momentum, l = angular)
+        double* momentum = stackalloc double[3];
+        double* angular = stackalloc double[3];
+        fixed (double* mass = state.Masses, pos = state.Positions, vel = state.Velocities)
         fixed (int* active = state.Active)
         {
             int status = NativeMethods.Energy(state.Count, mass, active, pos, vel, gravity,
-                softeningMeters, &native, &kinetic, &potential, p, l);
+                softeningMeters, &native, &kinetic, &potential, momentum, angular);
             ThrowOnError(status);
         }
         return new DiagnosticValues(kinetic + potential,

@@ -29,7 +29,11 @@ function paths(values, maximum, slots) {
   return { points, line, area };
 }
 
-const maxAbs = values => Math.max(1e-16, ...values.filter(value => value !== null).map(Math.abs));
+function maxAbs(values) {
+  let maximum = 1e-16;
+  for (const value of values) if (value !== null && Math.abs(value) > maximum) maximum = Math.abs(value);
+  return maximum;
+}
 
 export default function Diagnostics({ dataset, index, comparison, onCompare, busy }) {
   const drift = useMemo(() => energyDriftSeries(dataset), [dataset]);
@@ -38,7 +42,8 @@ export default function Diagnostics({ dataset, index, comparison, onCompare, bus
   const current = dataset.diagnostics.get(frame.step);
   const initial = dataset.diagnostics.get(dataset.frames[0].step);
   const comparing = comparison?.status === 'done' ? comparison.series : null;
-  const maximum = comparing ? Math.max(...comparing.map(item => maxAbs(item.values))) : maxAbs(drift);
+  const maximum = useMemo(() => comparing ? Math.max(...comparing.map(item => maxAbs(item.values))) : maxAbs(drift),
+    [comparing, drift]);
   const chart = useMemo(() => paths(drift, maximum, slots), [drift, maximum, slots]);
   const overlays = useMemo(() => comparing?.map(item => ({ ...item, ...paths(item.values, maximum, slots) })),
     [comparing, maximum, slots]);

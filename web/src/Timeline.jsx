@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Icon from './Icons.jsx';
 import { eventKinds } from './EventsPanel.jsx';
 import { frameIndexAtStep } from './dataset.mjs';
@@ -24,12 +24,17 @@ export default function Timeline({ dataset, playback }) {
   const unit = clockUnit(endTime);
   const progress = slots > 1 ? index / (slots - 1) : 1;
   const loaded = slots > 1 ? (dataset.frames.length - 1) / (slots - 1) : 1;
-  const markers = dataset.events.length <= maxMarkers ? dataset.events
-    : dataset.events.filter((_, position) => position % Math.ceil(dataset.events.length / maxMarkers) === 0);
+  const eventCount = dataset.events.length;
+  const markers = useMemo(() => eventCount <= maxMarkers ? dataset.events
+    : dataset.events.filter((_, position) => position % Math.ceil(eventCount / maxMarkers) === 0), [dataset.events, eventCount]);
+  const latest = useRef(null);
+  latest.current = { dataset, index, seek, toggle, reset, toggleLoop };
 
+  // Registered once: during playback the index changes every frame, so the handler reads it from a ref.
   useEffect(() => {
     const onKey = event => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || isEditable(event.target)) return;
+      const { dataset, index, seek, toggle, reset, toggleLoop } = latest.current;
       if (event.code === 'Space') { event.preventDefault(); toggle(); }
       else if (event.key === 'ArrowRight') { event.preventDefault(); seek(index + (event.shiftKey ? 10 : 1)); }
       else if (event.key === 'ArrowLeft') { event.preventDefault(); seek(index - (event.shiftKey ? 10 : 1)); }
@@ -39,7 +44,7 @@ export default function Timeline({ dataset, playback }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [dataset, index, seek, toggle, reset, toggleLoop]);
+  }, []);
 
   return <div className="timeline">
     <div className="timeline-readout">

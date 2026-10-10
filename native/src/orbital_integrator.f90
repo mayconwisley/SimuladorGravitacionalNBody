@@ -8,7 +8,7 @@ module orbital_integrator
   use iso_c_binding, only: c_int, c_double
   use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
   use orbital_types, only: os_options, os_report, os_event, integrator_verlet, &
-    integrator_yoshida4, event_collision, event_periapsis, event_apoapsis, event_escape
+    integrator_yoshida4, integrator_rk4, event_collision, event_periapsis, event_apoapsis, event_escape
   use orbital_forces, only: validate_system, total_accelerations, uses_velocity, central_body, &
     all_finite
   implicit none
@@ -55,7 +55,9 @@ contains
     status = 1_c_int
     if (event_capacity < 0) return
 
-    allocate(w_mass(n), w_radius(n), w_pos(3,n), w_vel(3,n), w_acc(3,n), stage(3,n,8), &
+    ! Velocity Verlet and Yoshida use stages 1-2 (velocity-dependent forces); only RK4 needs all 8.
+    allocate(w_mass(n), w_radius(n), w_pos(3,n), w_vel(3,n), w_acc(3,n), &
+      stage(3,n,merge(8, 2, options%integrator == integrator_rk4)), &
       previous_radial(n), previous_bound(n), w_active(n), found(max(1, event_capacity)), &
       stat=allocation_status)
     if (allocation_status /= 0) then

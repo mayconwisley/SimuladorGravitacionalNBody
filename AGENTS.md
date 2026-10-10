@@ -15,8 +15,10 @@ composition roots; centralize NuGet versions in `Directory.Packages.props`.
 Do not
 introduce UI or file I/O into the Fortran motor. Update `README.md` when the
 layout or workflow changes.
-Ready-to-run educational scenarios live in `web/src/presets.mjs`; keep them in
-SI units and within the API's body, particle, step, sample, and work limits.
+Ready-to-run educational scenarios live in `web/src/presets.mjs` and the
+`web/src/presets*.mjs` modules it combines (shared builders in
+`presetHelpers.mjs`); keep them in SI units, with unique labels, and within the
+API's body, particle, step, sample, and work limits.
 
 ## Build and test
 

@@ -141,24 +141,44 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     return largest || 1;
   }, [dataset, focus, rotating, pair]);
 
+  // Trail positions in the displayed frame, one Float64Array (xyz per sample, NaN while inactive)
+  // per body. They change only with the data or the reference frame, not with the camera or the
+  // playback index, so each animation frame only projects them.
+  const trails = useMemo(() => {
+    if (!dataset?.frames.length) return [];
+    const frames = dataset.frames;
+    const transforms = frames.map(frame => frameTransform(frame, rotating ? null : focus, rotating ? pair : null));
+    return dataset.names.slice(0, maxTrailBodies).map(name => {
+      const points = new Float64Array(3 * frames.length).fill(NaN);
+      frames.forEach((frame, i) => {
+        const body = frame.bodies.get(name);
+        if (!body?.active) return;
+        const [x, y, z] = transforms[i](body.x, body.y, body.z);
+        points[3 * i] = x; points[3 * i + 1] = y; points[3 * i + 2] = z;
+      });
+      return points;
+    });
+  }, [dataset, focus, rotating, pair]);
+
+  // Resizing a canvas reallocates its pixel buffer: do it only when the element size changes.
+  const ratio = Math.min(typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1, 2);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    canvas.width = Math.round(size.width * ratio);
+    canvas.height = Math.round(size.height * ratio);
+  }, [size, ratio]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(size.width * ratio);
-    canvas.height = Math.round(size.height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.clearRect(0, 0, size.width, size.height);
     drawStars(context, size.width, size.height);
     if (!dataset?.frames.length) { setScale(null); projection.current = null; return; }
 
-    const frame = dataset.frames[Math.min(index, dataset.frames.length - 1)];
-    const transforms = new Map();
-    const transformAt = i => {
-      if (!transforms.has(i)) transforms.set(i, frameTransform(dataset.frames[i], rotating ? null : focus, rotating ? pair : null));
-      return transforms.get(i);
-    };
-    const current = transformAt(dataset.frames.indexOf(frame));
+    const frameIndex = Math.min(index, dataset.frames.length - 1);
+    const frame = dataset.frames[frameIndex];
+    const current = frameTransform(frame, rotating ? null : focus, rotating ? pair : null);
     const cosYaw = Math.cos(camera.yaw), sinYaw = Math.sin(camera.yaw);
     const cosPitch = Math.cos(camera.pitch), sinPitch = Math.sin(camera.pitch);
     const pixelsPerMeter = Math.min(size.width, size.height) * 0.37 * camera.zoom / extent;
@@ -174,7 +194,6 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
       return { x: size.width / 2 + view.x * pixelsPerMeter * perspective,
         y: size.height / 2 - view.vertical * pixelsPerMeter * perspective, depth: view.depth, perspective };
     };
-    const projectBody = (i, body) => project(transformAt(i)(body.x, body.y, body.z));
 
     // Reference rings in the XY plane of the frame origin.
     context.lineWidth = 1;
@@ -192,43 +211,45 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     });
     context.setLineDash([]);
 
-    if (showTrails) {
+    if (showTrails && trails.length) {
       const last = dataset.frames.length - 1;
-      const frameIndex = Math.min(index, last);
       const stride = Math.max(1, Math.ceil(dataset.frames.length / 900));
+      // Sample indices shared by every body: the whole run and the part already travelled.
+      const all = [];
+      for (let i = 0; i < last; i += stride) all.push(i);
+      all.push(last);
+      const travelled = [];
+      for (let i = 0; i < frameIndex; i += stride) travelled.push(i);
+      travelled.push(frameIndex);
+      const chunk = Math.max(1, Math.ceil(travelled.length / trailChunks));
       context.lineCap = 'round';
       context.lineJoin = 'round';
-      // Draws a polyline through the given sample indices, breaking it where the body is inactive.
-      const path = (name, indices) => {
+      // Polyline through indices[from..to], broken where the body is inactive (NaN).
+      const path = (points, indices, from, to) => {
         let open = false;
-        for (const i of indices) {
-          const body = dataset.frames[i].bodies.get(name);
-          if (!body?.active) { open = false; continue; }
-          const point = projectBody(i, body);
+        for (let k = from; k <= to; k++) {
+          const i = indices[k];
+          const x = points[3 * i];
+          if (Number.isNaN(x)) { open = false; continue; }
+          const point = project([x, points[3 * i + 1], points[3 * i + 2]]);
           if (open) context.lineTo(point.x, point.y);
           else { context.moveTo(point.x, point.y); open = true; }
         }
       };
-      dataset.names.slice(0, maxTrailBodies).forEach((name, colorIndex) => {
+      trails.forEach((points, colorIndex) => {
+        if (points.length !== 3 * dataset.frames.length) return;
         const color = bodyColor(colorIndex);
-        const all = [];
-        for (let i = 0; i < last; i += stride) all.push(i);
-        all.push(last);
         context.beginPath();
-        path(name, all);
+        path(points, all, 0, all.length - 1);
         context.strokeStyle = rgba(color, 0.11);
         context.lineWidth = 1;
         context.stroke();
         if (frameIndex === 0) return;
-        const travelled = [];
-        for (let i = 0; i < frameIndex; i += stride) travelled.push(i);
-        travelled.push(frameIndex);
-        const chunk = Math.max(1, Math.ceil(travelled.length / trailChunks));
         for (let start = 0; start < travelled.length - 1; start += chunk) {
           const end = Math.min(travelled.length - 1, start + chunk);
           const recency = end / (travelled.length - 1);
           context.beginPath();
-          path(name, travelled.slice(start, end + 1));
+          path(points, travelled, start, end);
           context.strokeStyle = rgba(color, 0.12 + 0.78 * recency ** 1.6);
           context.lineWidth = 0.8 + 1.4 * recency;
           context.stroke();
@@ -239,23 +260,25 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     if (frame.particles) {
       const groups = dataset.particleGroups.length ? dataset.particleGroups
         : [{ start: 0, count: frame.particles.length / 3 }];
+      // One path per group: a single fill call instead of one per particle.
       groups.forEach((group, groupIndex) => {
-        context.fillStyle = rgba(particleColor(groupIndex), 0.8);
+        context.beginPath();
         for (let k = group.start; k < group.start + group.count; k++) {
           const x = frame.particles[3 * k];
           if (!Number.isFinite(x)) continue;
           const point = project(current(x, frame.particles[3 * k + 1], frame.particles[3 * k + 2]));
-          context.fillRect(point.x - 0.8, point.y - 0.8, 1.6, 1.6);
+          context.rect(point.x - 0.8, point.y - 0.8, 1.6, 1.6);
         }
+        context.fillStyle = rgba(particleColor(groupIndex), 0.8);
+        context.fill();
       });
     }
 
-    const frameIndex = dataset.frames.indexOf(frame);
     const bodies = dataset.names.map((name, colorIndex) => ({ body: frame.bodies.get(name), color: bodyColor(colorIndex) }))
       .filter(item => item.body?.active);
     const maxMass = Math.max(...bodies.map(item => item.body.mass), 0);
     const screens = new Map();
-    bodies.map(item => ({ ...item, screen: projectBody(frameIndex, item.body) }))
+    bodies.map(item => ({ ...item, screen: project(current(item.body.x, item.body.y, item.body.z)) }))
       .sort((a, b) => a.screen.depth - b.screen.depth)
       .forEach(({ body, color, screen }) => {
         screens.set(body.name, screen);
@@ -350,7 +373,7 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     const bar = scaleBar(1 / pixelsPerMeter, Math.min(140, size.width * 0.25));
     setScale(previous => previous && previous.meters === bar.meters &&
       Math.abs(previous.pixels - bar.pixels) < 0.5 ? previous : bar);
-  }, [dataset, index, focus, camera, extent, size, showTrails, labels, rotating, pair, drag]);
+  }, [dataset, index, focus, camera, extent, size, ratio, trails, showTrails, labels, rotating, pair, drag]);
 
   // Screen displacement of the focused body -> inertial displacement in meters, in the
   // plane facing the camera (depth unchanged).

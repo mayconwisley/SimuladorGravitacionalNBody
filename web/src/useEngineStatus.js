@@ -14,9 +14,11 @@ export default function useEngineStatus(intervalMs = 15000) {
         if (!cancelled) setStatus('offline');
       }
     }
+    const poll = () => { if (document.visibilityState !== 'hidden') check(); };
     check();
-    const timer = setInterval(check, intervalMs);
-    return () => { cancelled = true; clearInterval(timer); };
+    const timer = setInterval(poll, intervalMs);
+    document.addEventListener('visibilitychange', poll);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', poll); };
   }, [intervalMs]);
 
   return status;

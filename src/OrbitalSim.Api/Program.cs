@@ -67,9 +67,12 @@ app.MapPost("/api/simulations/stream", (HttpContext context, ScenarioInput reque
     }
 
     JsonSerializerOptions options = json.Value.SerializerOptions;
-    CancellationToken cancellation = context.RequestAborted;
     return Results.Stream(async stream =>
     {
+        // Linked to the request, and cancelled when writing stops for any reason, so the producer
+        // never keeps the motor running (or waits on a full channel) after the client is gone.
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+        CancellationToken cancellation = stop.Token;
         var channel = Channel.CreateBounded<StreamMessage>(new BoundedChannelOptions(32)
         {
             SingleReader = true,
@@ -96,13 +99,26 @@ app.MapPost("/api/simulations/stream", (HttpContext context, ScenarioInput reque
             }
         }, cancellation);
 
-        await WriteLine(stream, new StreamMessage("start", ParticleGroups: built.ParticleGroups,
-            ParticleCount: built.ParticleCount,
-            ExpectedSamples: InteractiveScenarioLimits.SampleCount(built.Scenario.Config.Steps,
-                built.Scenario.Config.SampleEverySteps)), options, cancellation);
-        await foreach (StreamMessage message in channel.Reader.ReadAllAsync(cancellation))
-            await WriteLine(stream, message, options, cancellation);
-        await producer;
+        try
+        {
+            await WriteLine(stream, new StreamMessage("start", ParticleGroups: built.ParticleGroups,
+                ParticleCount: built.ParticleCount,
+                ExpectedSamples: InteractiveScenarioLimits.SampleCount(built.Scenario.Config.Steps,
+                    built.Scenario.Config.SampleEverySteps)), options, cancellation);
+            await foreach (StreamMessage message in channel.Reader.ReadAllAsync(cancellation))
+                await WriteLine(stream, message, options, cancellation);
+        }
+        finally
+        {
+            await stop.CancelAsync();
+            try
+            {
+                await producer;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
     }, "application/x-ndjson");
 });
 
@@ -116,7 +132,16 @@ if (webRoot is not null)
 {
     var files = new PhysicalFileProvider(webRoot);
     app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = files });
-    app.UseStaticFiles(new StaticFileOptions { FileProvider = files });
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = files,
+        // Vite fingerprints everything under assets/: those files never change and can be cached.
+        OnPrepareResponse = static file =>
+        {
+            if (file.Context.Request.Path.StartsWithSegments("/assets"))
+                file.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        }
+    });
     app.MapFallback(() => Results.File(Path.Combine(webRoot, "index.html"), "text/html"));
 }
 
@@ -134,6 +159,11 @@ static async Task WriteLine(Stream stream, StreamMessage message, JsonSerializer
     CancellationToken cancellation)
 {
     await JsonSerializer.SerializeAsync(stream, message, options, cancellation);
-    await stream.WriteAsync("\n"u8.ToArray(), cancellation);
+    await stream.WriteAsync(NewLine, cancellation);
     await stream.FlushAsync(cancellation);
+}
+
+partial class Program
+{
+    private static readonly ReadOnlyMemory<byte> NewLine = "\n"u8.ToArray();
 }

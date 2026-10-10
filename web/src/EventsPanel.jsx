@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import Icon from './Icons.jsx';
 import { frameIndexAtStep } from './dataset.mjs';
 import { formatNumber, formatTime } from './format.mjs';
@@ -12,10 +12,18 @@ export const eventKinds = {
 };
 const listLimit = 150;
 
-export default function EventsPanel({ dataset, onSeek }) {
+// Memoized: it depends on the events, not on the playback index, so it does not re-render on
+// every animation frame.
+export default memo(function EventsPanel({ dataset, onSeek }) {
   const [filter, setFilter] = useState('all');
-  const counts = dataset.events.reduce((total, item) => ({ ...total, [item.kind]: (total[item.kind] ?? 0) + 1 }), {});
-  const shown = dataset.events.filter(item => filter === 'all' || item.kind === filter);
+  const { events } = dataset;
+  const counts = useMemo(() => {
+    const total = {};
+    for (const item of events) total[item.kind] = (total[item.kind] ?? 0) + 1;
+    return total;
+  }, [events, events.length]);
+  const shown = useMemo(() => filter === 'all' ? events : events.filter(item => item.kind === filter),
+    [events, events.length, filter]);
   return <section className="panel events-panel">
     <header className="panel-header">
       <div><p className="eyebrow">Linha do tempo</p><h2>Eventos</h2></div>
@@ -44,4 +52,4 @@ export default function EventsPanel({ dataset, onSeek }) {
       {shown.length > listLimit && <p className="panel-note">Mostrando {listLimit} de {shown.length} eventos.</p>}
     </>}
   </section>;
-}
+});

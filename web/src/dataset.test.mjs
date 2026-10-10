@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { appendSamples, createDataset, decodeParticles, energyDriftSeries, frameIndexAtStep,
+import { appendSamples, createDataset, decodeParticles, energyDriftFromSamples, energyDriftSeries, frameIndexAtStep,
   fromApi, suggestedTimeStep } from './dataset.mjs';
 import { parseNdjson } from './simulationClient.mjs';
 import { impulseVector, orbitalFrame, withManeuver } from './sandbox.mjs';
@@ -85,4 +85,20 @@ test('manobra do sandbox precisa ocorrer antes do último passo', () => {
   assert.equal(scenario.maneuvers.length, 1, 'cenário original intacto');
   assert.throws(() => withManeuver(scenario, { body: 'B', step: 10, deltaVelocityMetersPerSecond: [1, 0, 0] }),
     /Não há passos/);
+});
+
+test('amostras transmitidas crescem no lugar, sem copiar quadros a cada pedaço', () => {
+  const first = appendSamples(createDataset({ expectedSamples: 3 }), [sample(0)]);
+  const second = appendSamples(first, [sample(4)]);
+  assert.notEqual(second, first, 'novo objeto para o React perceber a mudança');
+  assert.equal(second.frames, first.frames, 'mesmo vetor de quadros');
+  assert.equal(second.diagnostics, first.diagnostics);
+  assert.deepEqual([first.revision, second.revision], [1, 2]);
+  assert.equal(second.frames.length, 2);
+  assert.equal(appendSamples(second, []), second, 'pedaço vazio não muda nada');
+});
+
+test('deriva de energia direto das amostras da API, como na comparação de integradores', () => {
+  assert.deepEqual(energyDriftFromSamples([sample(0, { energy: -10 }), sample(4, { energy: -9 })]), [0, 0.1]);
+  assert.deepEqual(energyDriftFromSamples([]), []);
 });

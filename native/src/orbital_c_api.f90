@@ -53,6 +53,7 @@ contains
     integer(c_int) :: status
     integer(c_int), allocatable :: active(:)
     real(c_double) :: kinetic, potential
+    integer :: allocation_status
 
     status = 1_c_int
     energy = 0.0_c_double
@@ -60,7 +61,11 @@ contains
     angular_momentum = 0.0_c_double
     if (n < 1) return
     if (.not. all(mass(1:n) > 0.0_c_double)) return
-    allocate(active(n))
+    allocate(active(n), stat=allocation_status)
+    if (allocation_status /= 0) then
+      status = 4_c_int
+      return
+    end if
     active = 1_c_int
     call system_energy(n, mass(1:n), active, pos(:,1:n), vel(:,1:n), grav, eps, &
                        default_options(), kinetic, potential, momentum, angular_momentum, status)
