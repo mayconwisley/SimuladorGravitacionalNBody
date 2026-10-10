@@ -3,6 +3,7 @@
 # Build nativo (CMake e scripts/build-tdm.ps1) e saídas da CLI
 /build/
 /output/
+/out/
 /benchmarks/results.csv
 *.mod
 *.smod

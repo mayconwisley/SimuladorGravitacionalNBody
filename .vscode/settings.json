@@ -1,0 +1,7 @@
+{
+  "cmake.generator": "MinGW Makefiles",
+  "cmake.configureSettings": {
+    "CMAKE_MAKE_PROGRAM": "C:/Programas/TDM-GCC-64/bin/mingw32-make.exe",
+    "CMAKE_Fortran_COMPILER": "C:/Programas/TDM-GCC-64/bin/gfortran.exe"
+  }
+}
