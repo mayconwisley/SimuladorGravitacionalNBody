@@ -884,3 +884,5 @@ h1, h2, h3, p { margin: 0; }
   .callout { flex-wrap: wrap; }
   .heading-actions { justify-content: flex-start; }
 }
+/* Placeholder while a lazily loaded page (the manual) downloads. */
+.route-loading { padding: 48px 0; color: var(--text-2); font-size: 13.5px; text-align: center; }

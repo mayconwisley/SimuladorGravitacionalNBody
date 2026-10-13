@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import OrbitCanvas from './OrbitCanvas.jsx';
 import PresetGallery from './PresetGallery.jsx';
@@ -13,7 +13,6 @@ import ErrorBoundary from './ErrorBoundary.jsx';
 import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
 import SiteFooter from './SiteFooter.jsx';
-import Manual from './Manual.jsx';
 import ScenarioSummary from './ScenarioSummary.jsx';
 import { fromScenario, integrators, limits, presetDraft, presets, toScenario } from './scenario.mjs';
 import { appendSamples, createDataset, energyDriftFromSamples, suggestedTimeStep } from './dataset.mjs';
@@ -23,6 +22,9 @@ import { datasetFromFiles } from './csvImport.mjs';
 import { formatNumber, formatTime } from './format.mjs';
 import { pathForTab, routeForPath, routes } from './routes.mjs';
 import { loadDraft, loadLastRun, saveDraft, saveLastRun } from './session.mjs';
+
+// The manual is long static text that most visits never open: load it with its route.
+const Manual = lazy(() => import('./Manual.jsx'));
 
 const headings = {
   editor: { eyebrow: 'Editor de cenário', title: 'Desenhe sua próxima órbita',
@@ -326,7 +328,7 @@ export default function App() {
         onCreate={() => go('editor')} busy={busy} runningKey={runningKey} /> :
       tab === 'editor' ? <ScenarioEditor draft={draft} setDraft={setDraft} onRun={() => run()}
         onBrowse={() => go('catalog')} busy={busy} onError={setError} /> :
-      tab === 'manual' ? <Manual /> :
+      tab === 'manual' ? <Suspense fallback={<p className="route-loading" role="status">Carregando manual…</p>}><Manual /></Suspense> :
         <>
           {stepTooLarge && <div className="callout warning" role="status">
             <Icon name="alert" size={18} />
