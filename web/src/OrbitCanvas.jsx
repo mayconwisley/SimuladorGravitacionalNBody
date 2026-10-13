@@ -86,7 +86,7 @@ const unit = vector => {
 };
 
 export default function OrbitCanvas({ dataset, index, focus, source, emptyActions, loading = false, emptyNotice = '',
-  preferredFrame = 'inertial', canMove = false, onMoveBody }) {
+  preferredFrame = 'inertial', fit = null, canMove = false, onMoveBody }) {
   const canvasRef = useRef(null);
   const pointer = useRef(null);
   const projection = useRef(null);
@@ -167,6 +167,9 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
     return found;
   }, [dataset, looks]);
 
+  // Scene size: the farthest body (or particle) from the frame origin over the run. A preset may
+  // frame only some bodies (`fit`), e.g. the Sun's wobble, leaving the others out of the view.
+  const fitNames = useMemo(() => fit?.length ? new Set(fit) : null, [fit]);
   const extent = useMemo(() => {
     if (!dataset?.frames.length) return 1;
     let largest = 0;
@@ -175,11 +178,11 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
       const frame = dataset.frames[i];
       const transform = frameTransform(frame, rotating ? null : focus, rotating ? pair : null);
       for (const body of frame.bodies.values()) {
-        if (!body.active) continue;
+        if (!body.active || (fitNames && !fitNames.has(body.name))) continue;
         const [x, y, z] = transform(body.x, body.y, body.z);
-        largest = Math.max(largest, Math.hypot(x, y, z));
+        largest = Math.max(largest, Math.hypot(x, y, z) + (fitNames ? body.radius : 0));
       }
-      if (frame.particles && (i === 0 || i + stride >= dataset.frames.length)) {
+      if (frame.particles && !fitNames && (i === 0 || i + stride >= dataset.frames.length)) {
         for (let k = 0; k < frame.particles.length; k += 9) {
           const [x, y, z] = transform(frame.particles[k], frame.particles[k + 1], frame.particles[k + 2]);
           if (Number.isFinite(x)) largest = Math.max(largest, Math.hypot(x, y, z));
@@ -187,7 +190,7 @@ export default function OrbitCanvas({ dataset, index, focus, source, emptyAction
       }
     }
     return largest || 1;
-  }, [dataset, focus, rotating, pair]);
+  }, [dataset, focus, rotating, pair, fitNames]);
 
   // Trail positions in the displayed frame, one Float64Array (xyz per sample, NaN while inactive)
   // per body. They change only with the data or the reference frame, not with the camera or the

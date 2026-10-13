@@ -98,7 +98,7 @@ export default function ScenarioEditor({ draft, setDraft, onRun, onBrowse, busy,
             onChange={value => update('softeningMeters', value)} hint="0 para gravidade newtoniana" />
           <TextField label="Passo de tempo Δt" unit="s" value={draft.timeStepSeconds}
             onChange={value => update('timeStepSeconds', value)} hint="Negativo integra para trás no tempo" />
-          <TextField label="Número de passos" value={draft.steps} hint="Até 20.000" inputMode="numeric"
+          <TextField label="Número de passos" value={draft.steps} hint="Até 3.000.000" inputMode="numeric"
             onChange={value => update('steps', value)} />
           <TextField label="Amostra a cada" unit="passos" value={draft.sampleEverySteps} hint="Até 1.001 amostras"
             inputMode="numeric" onChange={value => update('sampleEverySteps', value)} />

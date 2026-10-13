@@ -17,7 +17,7 @@ for (const [key, preset] of Object.entries(presets)) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(scenario),
-    signal: AbortSignal.timeout(60_000)
+    signal: AbortSignal.timeout(120_000)
   });
   if (!response.ok) throw new Error(`${key}: HTTP ${response.status}: ${await response.text()}`);
   const { samples, particleCount } = await response.json();

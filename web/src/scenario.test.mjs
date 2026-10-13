@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { presetDraft, presets, toScenario, fromScenario } from './scenario.mjs';
+import { limits, presetDraft, presets, toScenario, fromScenario } from './scenario.mjs';
 
 test('ao menos 20 cenários prontos têm metadados, limites e corpos distintos', () => {
   assert.ok(Object.keys(presets).length >= 20);
@@ -11,7 +11,7 @@ test('ao menos 20 cenários prontos têm metadados, limites e corpos distintos',
     assert.ok(!labels.has(preset.label));
     labels.add(preset.label);
     assert.ok(scenario.bodies.length <= 32);
-    assert.ok(scenario.steps <= 20000);
+    assert.ok(scenario.steps <= limits.steps);
     assert.ok(2 + Math.floor((scenario.steps - 1) / scenario.sampleEverySteps) <= 1001);
     if (scenario.softeningMeters === 0) {
       // Vector bodies must not share a position; orbit bodies must not share central body and elements.

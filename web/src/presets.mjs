@@ -5,6 +5,8 @@ import { binary, body, center, centralMass, earthMass, earthRadius, orbit, orbit
 import { solarSystemPresets } from './presetsSolarSystem.mjs';
 import { exoplanetPresets } from './presetsExoplanets.mjs';
 import { laboratoryPresets } from './presetsLaboratory.mjs';
+import { advancedPresets } from './presetsAdvanced.mjs';
+import { missionPresets } from './presetsMissions.mjs';
 
 const equalBinary = binary(1e23, 1e23, 4e6);
 const unequalBinary = binary(2e23, 5e22, 5e6);
@@ -218,4 +220,5 @@ const classicPresets = {
 };
 
 // Gallery order: the classic scenarios first, then real systems and the laboratory set.
-export const presets = { ...classicPresets, ...solarSystemPresets, ...exoplanetPresets, ...laboratoryPresets };
+export const presets = { ...classicPresets, ...solarSystemPresets, ...exoplanetPresets, ...laboratoryPresets,
+  ...missionPresets, ...advancedPresets };

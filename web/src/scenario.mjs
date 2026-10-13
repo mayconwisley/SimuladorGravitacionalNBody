@@ -4,7 +4,7 @@ export { presets };
 
 // Interactive limits, mirrored from src/OrbitalSim.Api/InteractiveScenarioLimits.cs.
 export const limits = {
-  bodies: 32, particles: 2000, particleGroups: 8, maneuvers: 100, steps: 20000, samples: 1001,
+  bodies: 32, particles: 2000, particleGroups: 8, maneuvers: 100, steps: 3000000, samples: 1001,
   particleSamples: 400000, pairEvaluations: 6e8
 };
 
@@ -128,7 +128,7 @@ export function toScenario(draft) {
     sampleEverySteps: finite(draft.sampleEverySteps, 'intervalo de amostragem', { positive: true, integer: true }),
     bodies: []
   };
-  if (scenario.steps > limits.steps) throw new Error('O limite é 20.000 passos.');
+  if (scenario.steps > limits.steps) throw new Error('O limite é 3.000.000 de passos.');
   if (!Number.isFinite(scenario.steps * scenario.timeStepSeconds))
     throw new Error('O tempo final está fora do intervalo numérico.');
   const samples = sampleCount(scenario.steps, scenario.sampleEverySteps);

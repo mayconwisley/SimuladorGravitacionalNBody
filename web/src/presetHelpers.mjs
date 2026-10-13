@@ -89,6 +89,7 @@ export function circularVelocity(primaryMassKg, radiusMeters, phaseDegrees) {
 }
 
 // view: 'rotating' opens the result in the frame co-rotating with the two heaviest bodies;
+// fit: names of the bodies the camera frames (the others may fall outside the view);
 // compare: true runs the integrator comparison once the result is loaded.
 export function preset(label, category, description, bodies, options = {}) {
   return {
@@ -103,6 +104,7 @@ export function preset(label, category, description, bodies, options = {}) {
     ...(options.particleGroups && { particleGroups: options.particleGroups }),
     ...(options.maneuvers && { maneuvers: options.maneuvers }),
     ...(options.view && { view: options.view }),
+    ...(options.fit && { fit: options.fit }),
     ...(options.compare && { compare: true })
   };
 }

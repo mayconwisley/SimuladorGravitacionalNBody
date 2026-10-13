@@ -5,24 +5,24 @@ import { presets } from './scenario.mjs';
 
 const entries = Object.entries(presets);
 
-test('a galeria tem 100 cenários com nomes e chaves únicos', () => {
-  assert.equal(entries.length, 100);
-  assert.equal(new Set(entries.map(([, preset]) => preset.label)).size, 100);
+test('a galeria tem 125 cenários com nomes e chaves únicos', () => {
+  assert.equal(entries.length, 125);
+  assert.equal(new Set(entries.map(([, preset]) => preset.label)).size, 125);
 });
 
-test('paginação de 25 itens: quatro páginas, a última completa', () => {
+test('paginação de 25 itens: cinco páginas, a última completa', () => {
   const first = paginate(entries, 1);
-  assert.equal(first.pageCount, 4);
+  assert.equal(first.pageCount, 5);
   assert.equal(first.items.length, 25);
   assert.deepEqual([first.start, first.end], [0, 25]);
-  const last = paginate(entries, 4);
-  assert.deepEqual([last.start, last.end, last.items.length], [75, 100, 25]);
+  const last = paginate(entries, 5);
+  assert.deepEqual([last.start, last.end, last.items.length], [100, 125, 25]);
 });
 
 test('página inválida ou fora do intervalo é ajustada', () => {
   assert.equal(paginate(entries, 0).page, 1);
   assert.equal(paginate(entries, 'abc').page, 1);
-  assert.equal(paginate(entries, 99).page, 4);
+  assert.equal(paginate(entries, 99).page, 5);
   assert.equal(paginate([], 3).pageCount, 1);
 });
 

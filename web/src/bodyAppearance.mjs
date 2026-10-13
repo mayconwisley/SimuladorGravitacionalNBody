@@ -64,6 +64,14 @@ export const catalog = {
   'ʻOumuamua': asteroid(1e2, 0, '#b8866b'),
   'Didymos': asteroid(3.9e2, 5.4e11),
   'Dimorphos': asteroid(7.5e1, 4.3e9),
+  'Jano': moon('icy', 8.9e4, 1.8975e18, '#cfc9c0'),
+  'Epimeteu': moon('icy', 5.8e4, 5.266e17, '#c9c3ba'),
+  'Prometeu': moon('icy', 4.3e4, 1.595e17, '#d2ccc4'),
+  'Pandora': moon('icy', 4.1e4, 1.371e17, '#cdc7bf'),
+  'Apophis': asteroid(1.7e2, 6.1e10, '#a8998a'),
+  '2024 PT5': asteroid(5, 0),
+  'Sedna': asteroid(5e5, 0, '#c4654a'),
+  'Planeta Nove': exo('iceWorld', 2.5 * earthRadius, { color: '#9fb7c9' }),
   'Proto-Terra': planet('molten', 6.1e6, 5.37e24, 5, '#d9774a'),
   'Theia': planet('rock', 3.39e6, 6.4e23, 8, '#b49a7e'),
   ...Object.fromEntries(['Agamenon', 'Anquises', 'Aquiles', 'Eneias', 'Heitor', 'Nestor', 'Príamo', 'Pátroclo',
@@ -110,6 +118,21 @@ export const catalog = {
   '51 Pegasi b': exo('hotJupiter', 1.2 * jupiterRadius, { locked: true }),
   'HD 80606': star(5574),
   'HD 80606 b': exo('giant', 1.03 * jupiterRadius),
+  'HD 110067': star(5266),
+  ...Object.fromEntries([['b', 2.20], ['c', 2.39], ['d', 2.85], ['e', 1.94], ['f', 2.61], ['g', 2.55]]
+    .map(([letter, radius]) => [`HD 110067 ${letter}`, exo('subNeptune', radius * earthRadius, { locked: true })])),
+  // Neutron stars: hot and only ~10 km across, seen as points.
+  'PSR B1257+12': star(25000, { radius: 1e4 }),
+  'PSR B1257+12 A': exo('hotRock', 0.3 * earthRadius, { locked: true }),
+  'PSR B1257+12 B': exo('hotRock', 1.5 * earthRadius, { locked: true }),
+  'PSR B1257+12 C': exo('hotRock', 1.5 * earthRadius, { locked: true }),
+  'PSR B1913+16': star(25000, { radius: 1e4 }),
+  'PSR B1913+16 B': star(25000, { radius: 1e4 }),
+  'Kepler-9': star(5774),
+  'Kepler-9 b': exo('giant', 8.29 * earthRadius),
+  'Kepler-9 c': exo('giant', 8.08 * earthRadius),
+  'Castor Aa': star(10300), 'Castor Ab': star(3800), 'Castor Ba': star(8300), 'Castor Bb': star(3800),
+  'Castor Ca': star(3820), 'Castor Cb': star(3820),
   'Kepler-16 b': exo('giant', 0.754 * jupiterRadius, { mass: 1.0e27 }),
   'Kepler-47 b': exo('subNeptune', 3.05 * earthRadius, { mass: 1.2e26 }),
   'Kepler-47 c': exo('subNeptune', 4.65 * earthRadius, { mass: 1.9e26 })
@@ -122,7 +145,7 @@ const rules = [
   [/aglomerado/i, 'cluster'],
   [/estrela|^massa \d/i, 'star'],
   [/cometa|fragmento/i, 'comet'],
-  [/sat[eé]lite|sonda|nave|c[aá]psula|gps|geo |^plano \d|queima|perseguidor|^alvo$|bi-el[ií]ptica|hohmann|^e = /i, 'craft'],
+  [/sat[eé]lite|sonda|nave|c[aá]psula|gps|geo |^plano \d|queima|perseguidor|^alvo$|bi-el[ií]ptica|hohmann|^e = |voyager|galileo|apollo|perseverance|molniya/i, 'craft'],
   [/troian|girino|ferradura|planetesimal|asteroide/i, 'asteroid'],
   [/^lua\b/i, 'moon'],
   [/planeta|terra/i, 'planet']
@@ -228,7 +251,7 @@ export const trailColor = (name, massKg, index) => bodyAppearance(name, massKg, 
 const particleStyles = [
   [/anel/i, { color: '#e4d6b8', glow: false }],
   [/kuiper/i, { color: '#a9c2d6', glow: false }],
-  [/cintur|coorbital|troian|asteroide/i, { color: '#bba68c', glow: false }],
+  [/cintur|coorbital|troian|asteroide|entulho/i, { color: '#bba68c', glow: false }],
   [/estrela|aglomerado/i, { color: '#ffe3bd', glow: true }]
 ];
 

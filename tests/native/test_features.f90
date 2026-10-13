@@ -23,6 +23,7 @@ contains
     call test_j2_precession()
     call test_drag_decay()
     call test_1pn_precession()
+    call test_1pn_equal_masses()
     call test_collisions()
     call test_turning_point_events()
     call test_escape_events()
@@ -454,6 +455,34 @@ contains
     after = elements_of_second(mass, pos, vel)
     call check(abs(angle_difference(after%argument_periapsis_rad, before%argument_periapsis_rad)) &
                < 1.0e-5_c_double, 'no spurious Newtonian precession')
+  end subroutine
+
+  ! Equal masses m = 1 + 1 on a relative orbit a = 1, e = 0.5 with c = 100;
+  ! Yoshida, 2000 steps per orbit, 40 orbits. The periapsis of the relative orbit
+  ! advances 6 pi G (m1 + m2) / (c^2 a (1 - e^2)) per orbit (tol 2%), twice the
+  ! test-particle value around one of the masses; total momentum is conserved
+  ! (tol 1e-12 of the initial momentum of the moving body).
+  subroutine test_1pn_equal_masses()
+    real(c_double) :: mass(2), pos(3,2), vel(3,2), predicted, measured, momentum(3)
+    type(os_options) :: options
+    type(os_report) :: report
+    type(os_elements) :: before, after
+    options = default_options()
+    options%integrator = integrator_yoshida4
+    options%central_index = 0_c_int
+    options%light_speed_m_s = 100.0_c_double
+    call central_orbit(1.0_c_double, 1.0_c_double, kepler(1.0_c_double, 0.5_c_double, &
+      0.0_c_double, 0.0_c_double, 0.0_c_double, 0.0_c_double), mass, pos, vel)
+    momentum = mass(1) * vel(:,1) + mass(2) * vel(:,2)
+    before = elements_of_second(mass, pos, vel)
+    call check(advance(2, mass, pos, vel, 2.0_c_double * pi / sqrt(2.0_c_double) / 2000.0_c_double, &
+                       80000, options, report) == 0_c_int, 'equal-mass 1PN integration')
+    after = elements_of_second(mass, pos, vel)
+    measured = angle_difference(after%argument_periapsis_rad, before%argument_periapsis_rad)
+    predicted = 40.0_c_double * 6.0_c_double * pi * 2.0_c_double / (1.0e4_c_double * 0.75_c_double)
+    call check(abs(measured / predicted - 1.0_c_double) < 0.02_c_double, 'equal-mass 1PN periapsis advance')
+    call check(maxval(abs(mass(1) * vel(:,1) + mass(2) * vel(:,2) - momentum)) < &
+               1.0e-12_c_double * maxval(abs(momentum)), 'equal-mass 1PN conserves momentum')
   end subroutine
 
   ! Head-on bodies (m = 2 and 1, v = +1 and -1, radii 0.1) with G = 1e-9 merge

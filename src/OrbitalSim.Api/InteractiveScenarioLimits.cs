@@ -12,7 +12,8 @@ internal static class InteractiveScenarioLimits
     public const int MaxParticles = 2_000;
     public const int MaxParticleGroups = 8;
     public const int MaxManeuvers = 100;
-    public const int MaxSteps = 20_000;
+    // Steps alone are cheap with few bodies; the pair budget below bounds the actual work.
+    public const int MaxSteps = 3_000_000;
     public const int MaxSamples = 1_001;
     // Particle positions sent to the browser: samples x particles (12 bytes each in float32).
     public const long MaxParticleSamples = 400_000;

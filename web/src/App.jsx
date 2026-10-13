@@ -65,6 +65,8 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [emptyNotice, setEmptyNotice] = useState('');
   const [view, setView] = useState('inertial');
+  // Bodies the camera frames (a preset option); null frames every body.
+  const [fit, setFit] = useState(null);
   const [comparison, setComparison] = useState(null);
   const [reversal, setReversal] = useState(null);
   const csvInput = useRef(null);
@@ -103,13 +105,13 @@ export default function App() {
     if (restoreAttempted.current || tab !== 'results' || dataset) return;
     restoreAttempted.current = true;
     const last = loadLastRun();
-    if (last?.scenario) execute(last.scenario, last.label, { view: last.view });
+    if (last?.scenario) execute(last.scenario, last.label, { view: last.view, fit: last.fit ?? null });
     else if (last) setEmptyNotice(importedNotice);
   }, [tab, dataset]);
 
   const go = key => navigate(pathForTab(key));
 
-  async function execute(scenario, label, { presetKey = null, view: preferred = 'inertial', compare = false,
+  async function execute(scenario, label, { presetKey = null, view: preferred = 'inertial', fit: framed = null, compare = false,
     keepFocus = false, seekTo = null, reversalOf = null } = {}) {
     abort.current?.abort();
     compareAbort.current?.abort();
@@ -121,7 +123,7 @@ export default function App() {
     const commit = () => { pendingFrame = 0; if (!controller.signal.aborted) setDataset(current); };
     const flush = () => { if (pendingFrame) cancelAnimationFrame(pendingFrame); commit(); };
     setError(''); setNotice(''); setEmptyNotice(''); setBusy(true); setRunningKey(presetKey);
-    setComparison(null); setReversal(reversalOf); setView(preferred);
+    setComparison(null); setReversal(reversalOf); setView(preferred); setFit(framed);
     if (!keepFocus) setFocus(null);
     playback.reset();
     pendingSeek.current = seekTo;
@@ -142,7 +144,7 @@ export default function App() {
       });
       current = { ...current, complete: true };
       flush();
-      saveLastRun({ label, scenario, view: preferred });
+      saveLastRun({ label, scenario, view: preferred, ...(framed && { fit: framed }) });
       if (compare) compareIntegrators(scenario);
     } catch (cause) {
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
@@ -169,7 +171,7 @@ export default function App() {
     const preset = presetKey ? presets[presetKey] : null;
     execute(scenario, preset ? preset.label :
       scenario.bodies.length <= 3 ? scenario.bodies.map(body => body.name).join(' / ') : `${scenario.bodies.length} corpos`,
-    { presetKey, view: preset?.view ?? 'inertial', compare: Boolean(preset?.compare) });
+    { presetKey, view: preset?.view ?? 'inertial', fit: preset?.fit ?? null, compare: Boolean(preset?.compare) });
   }
 
   function openPreset(key, visualize) {
@@ -210,7 +212,7 @@ export default function App() {
     try {
       const next = withManeuver(dataset.scenario, { ...maneuver, step: frame.step });
       setDraft(fromScenario(next));
-      execute(next, source, { view, keepFocus: true, seekTo: playback.index });
+      execute(next, source, { view, fit, keepFocus: true, seekTo: playback.index });
     } catch (cause) { setError(cause.message); }
   }
 
@@ -218,7 +220,7 @@ export default function App() {
     try {
       const { scenario, truncated } = withSuggestedStep(dataset.scenario, suggestedTimeStep(dataset));
       setDraft(fromScenario(scenario));
-      execute(scenario, source, { view, keepFocus: true });
+      execute(scenario, source, { view, fit, keepFocus: true });
       if (truncated) setNotice(`Com o Δt sugerido, o limite de ${limits.steps.toLocaleString('pt-BR')} passos encurta a duração simulada.`);
     } catch (cause) { setError(cause.message); }
   }
@@ -248,7 +250,7 @@ export default function App() {
     const origin = dataset.frames[0];
     const extent = Math.max(...[...origin.bodies.values()].map(item => Math.hypot(item.x - origin.center.x,
       item.y - origin.center.y, item.z - origin.center.z)), 1);
-    execute(next, `${source.replace(/ · tempo reverso$/, '')} · tempo reverso`, { view,
+    execute(next, `${source.replace(/ · tempo reverso$/, '')} · tempo reverso`, { view, fit,
       reversalOf: { origin: new Map([...origin.bodies].map(([name, item]) => [name, item])), extent } });
   }
 
@@ -259,7 +261,7 @@ export default function App() {
       const imported = await datasetFromFiles(event.target.files);
       saveLastRun({ label: 'Dados importados', scenario: null });
       setDataset(imported); setSource('Dados importados'); setFocus(null); setComparison(null);
-      setReversal(null); setView('inertial'); setEmptyNotice(''); setError(''); setNotice('');
+      setReversal(null); setView('inertial'); setFit(null); setEmptyNotice(''); setError(''); setNotice('');
       playback.reset();
       if (location.pathname !== pathForTab('results')) go('results');
     } catch (cause) { setError(cause.message); }
@@ -338,7 +340,7 @@ export default function App() {
           <div className={`results-layout${frames ? '' : ' empty'}`}>
             <div className="viewer">
               <OrbitCanvas dataset={frames ? dataset : null} index={playback.index} focus={focus} source={source}
-                loading={busy} emptyNotice={emptyNotice} preferredFrame={view}
+                loading={busy} emptyNotice={emptyNotice} preferredFrame={view} fit={fit}
                 canMove={Boolean(sandbox)} onMoveBody={(name, delta) => applyManeuver({ body: name,
                   deltaVelocityMetersPerSecond: [0, 0, 0], deltaPositionMeters: delta })}
                 emptyActions={<div className="empty-actions">

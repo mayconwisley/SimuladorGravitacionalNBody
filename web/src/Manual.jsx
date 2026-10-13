@@ -124,7 +124,7 @@ export default function Manual() {
       <h3>Corpos e seções opcionais</h3>
       <p>Em vez de <code>positionMeters</code> e <code>velocityMetersPerSecond</code>, um corpo pode ter <code>orbit</code> com <code>around</code>, <code>semiMajorAxisMeters</code>, <code>eccentricity</code> e os ângulos <code>inclinationDegrees</code>, <code>ascendingNodeDegrees</code>, <code>argumentOfPeriapsisDegrees</code> e <code>trueAnomalyDegrees</code>. O corpo central deve aparecer antes na lista e ter massa positiva. <code>radiusMeters</code> serve às colisões; <code>dragAreaPerMassSquareMetersPerKg</code>, ao arrasto.</p>
       <p><code>physics</code> configura J2, atmosfera, relatividade e colisões; efeitos centrais exigem <code>centralBody</code>. <code>particleGroups</code> cria anéis ou discos com corpo central, quantidade e raios interno/externo. <code>maneuvers</code> aplica <code>deltaVelocityMetersPerSecond</code> e, opcionalmente, <code>deltaPositionMeters</code> em um <code>step</code> anterior ao fim.</p>
-      <div className="manual-note">Use números JSON com ponto decimal e sem unidade escrita no valor. O formulário aceita vírgula decimal, mas o arquivo JSON deve seguir a sintaxe JSON. A execução web limita 32 corpos, 2.000 partículas, 8 grupos, 100 manobras, 20.000 passos e 1.001 amostras.</div>
+      <div className="manual-note">Use números JSON com ponto decimal e sem unidade escrita no valor. O formulário aceita vírgula decimal, mas o arquivo JSON deve seguir a sintaxe JSON. A execução web limita 32 corpos, 2.000 partículas, 8 grupos, 100 manobras, 3.000.000 de passos e 1.001 amostras.</div>
     </section>
 
     <section className="panel manual-section" id="opcionais">
@@ -189,7 +189,7 @@ export default function Manual() {
     <section className="panel manual-section" id="sessao">
       <p className="eyebrow">09 · Continuar depois</p><h2>Sessão, arquivos e limites</h2>
       <p>O rascunho do editor fica salvo neste navegador. Ao abrir Resultados novamente após recarregar a página, a última simulação criada no app pode ser recalculada. Resultados importados por CSV não ficam salvos: selecione os arquivos novamente. Para guardar um cenário de forma portátil, use <strong>Exportar JSON</strong>.</p>
-      <p>Uma execução web aceita até 32 corpos, 2.000 partículas em 8 grupos, 100 manobras, 20.000 passos e 1.001 amostras. Também há limites para a combinação de partículas, amostras e trabalho de cálculo. Se o resumo indicar excesso, reduza corpos ou partículas, diminua passos ou aumente <code>sampleEverySteps</code>.</p>
+      <p>Uma execução web aceita até 32 corpos, 2.000 partículas em 8 grupos, 100 manobras, 3.000.000 de passos e 1.001 amostras. Também há limites para a combinação de partículas, amostras e trabalho de cálculo. Se o resumo indicar excesso, reduza corpos ou partículas, diminua passos ou aumente <code>sampleEverySteps</code>.</p>
       <div className="manual-note">A interface não oferece exportação de CSV. <strong>Exportar JSON</strong> salva o cenário, enquanto <strong>Importar CSV</strong> abre resultados já calculados.</div>
     </section>
 

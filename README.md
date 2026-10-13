@@ -109,7 +109,7 @@ pelos scripts de build documentados aqui.
 Cada aba tem um endereço próprio (`/`, `/editor`, `/resultados`, `/manual`); recarregar a
 página mantém a aba, o rascunho do editor e recalcula a última simulação.
 
-- **Simulações**: busque ou filtre os 100 cenários e clique em **Visualizar**
+- **Simulações**: busque ou filtre os 125 cenários e clique em **Visualizar**
   para executar, ou em **Editar** para levar o cenário ao formulário.
 - **Criar cenário**: escolha o integrador e os parâmetros numéricos (Δt
   negativo integra para trás no tempo); defina cada corpo por vetores XYZ ou por
@@ -150,7 +150,7 @@ página mantém a aba, o rascunho do editor e recalcula a última simulação.
 
 ### Galeria de simulações
 
-A galeria tem 100 cenários, mostrados 25 por página. Busca, categoria e página
+A galeria tem 125 cenários, mostrados 25 por página. Busca, categoria e página
 ficam na URL (`/?categoria=Física&busca=j2&pagina=2`), então F5 e o botão
 voltar mantêm a posição.
 
@@ -159,11 +159,12 @@ voltar mantêm a posição.
 | Órbitas | Terra e satélite; órbitas baixa, alta e polar; Sol e Terra; prógrado e retrógrado; planos inclinados; ressonância 2:1; satélites geoestacionários; constelação GPS; constelação em órbita baixa; sondas em órbita lunar. |
 | Coleções | Marte e suas duas luas; quatro órbitas concêntricas; companheiros troianos; anel de oito; anel inclinado; nuvem de 24 corpos; sistemas de três e de seis planetas (Mercúrio a Saturno). |
 | Experimentos | Elipses suave e acentuada; cometa didático; quase escape; escape; Hohmann; encontro orbital; bi-elíptica contra Hohmann; mudança de plano; estilingue gravitacional; reentrada controlada; rumo à Lua; efeito Oberth; missão DART; mesmo semi-eixo, mesmo período; queda radial; esfera de Hill; pontos de Lagrange Sol–Terra. |
-| Múltiplos | Binárias iguais e desiguais; um e dois planetas circumbinários; triplo hierárquico; órbita em ferradura; coreografia em oito; triângulo de Lagrange; solução colinear de Euler; problema pitagórico; aglomerado de Plummer; colapso frio; estrela intrusa; sistema quádruplo; limite de estabilidade circumbinário; Alfa Centauri A e B. |
-| Física | J2; arrasto; precessão relativística; planetesimais; comparar integradores; avanço do perigeu (J2); circularização por arrasto; S2 e Sgr A*; impacto de Theia; amaciamento; aerocaptura em Marte; Shoemaker-Levy 9. |
-| Partículas | Anel de Saturno e Mimas; cinturão e Júpiter; colisão de galáxias; aglomerado desfeito por maré; nuvem coorbital de Júpiter; disco truncado; anéis inclinados com J2; Roda de Carro; cinturão de Kuiper. |
-| Sistema Solar | Planetas rochosos; planetas gigantes; Sistema Solar completo; Terra e Lua; Sol, Terra e Lua; luas galileanas, de Saturno, de Urano e de Netuno; Plutão e Caronte; Halley; ʻOumuamua; rosácea de Vênus; laços de Marte; Netuno–Plutão 3:2; Cruithne; troianos de Júpiter. |
-| Exoplanetas | TRAPPIST-1; Kepler-11; Kepler-90; Gliese 876; HR 8799; Proxima Centauri; 51 Pegasi b; HD 80606 b. |
+| Múltiplos | Binárias iguais e desiguais; um e dois planetas circumbinários; triplo hierárquico; órbita em ferradura; coreografia em oito; triângulo de Lagrange; solução colinear de Euler; problema pitagórico; aglomerado de Plummer; colapso frio; estrela intrusa; sistema quádruplo; limite de estabilidade circumbinário; Alfa Centauri A e B; Castor (sêxtupla); coreografia borboleta; problema de Sitnikov; limite de Routh; Kozai–Lidov; mecanismo de Hills. |
+| Física | J2; arrasto; precessão relativística; planetesimais; comparar integradores; avanço do perigeu (J2); circularização por arrasto; S2 e Sgr A*; impacto de Theia; amaciamento; aerocaptura em Marte; Shoemaker-Levy 9; pulsar binário Hulse–Taylor. |
+| Partículas | Anel de Saturno e Mimas; cinturão e Júpiter; colisão de galáxias; aglomerado desfeito por maré; nuvem coorbital de Júpiter; disco truncado; anéis inclinados com J2; Roda de Carro; cinturão de Kuiper; uma lua vira anel (limite de Roche); Via Láctea e Andrômeda; corrente de Sagitário. |
+| Sistema Solar | Planetas rochosos; planetas gigantes; Sistema Solar completo; Terra e Lua; Sol, Terra e Lua; luas galileanas, de Saturno, de Urano e de Netuno; Plutão e Caronte; Halley; ʻOumuamua; rosácea de Vênus; laços de Marte; Netuno–Plutão 3:2; Cruithne; troianos de Júpiter; Jano e Epimeteu; luas pastoras do anel F; lacunas de Kirkwood; oscilação do Sol; Planeta Nove. |
+| Exoplanetas | TRAPPIST-1; Kepler-11; Kepler-90; Gliese 876; HR 8799; Proxima Centauri; 51 Pegasi b; HD 80606 b; HD 110067; planetas do pulsar PSR B1257+12; Kepler-9 e as variações nos trânsitos. |
+| Missões | Apollo 13 (retorno livre); Voyager 2 (Grand Tour); Galileo (Vênus, Terra, Terra, Júpiter); janela para Marte de 2020; órbitas Molniya; Apophis em 2029; minilua temporária. |
 
 Todos usam unidades SI. Os cenários de Sistema Solar e exoplanetas partem de
 elementos orbitais médios (J2000, JPL) e massas publicadas, aproximados; onde
@@ -172,14 +173,27 @@ velocidade da luz reduzida, as massas exageradas e as posições ilustrativas
 (troianos, Cruithne) estão indicadas na descrição de cada cenário. Os demais
 são sistemas idealizados, não efemérides ou previsões astronômicas. Os módulos
 ficam em `web/src/presets.mjs` (clássicos), `presetsSolarSystem.mjs`,
-`presetsExoplanets.mjs` e `presetsLaboratory.mjs`, com construtores comuns em
-`presetHelpers.mjs`; as manobras dos experimentos são calculadas ali a partir
-das fórmulas de dois corpos, de modo que seguem o passo de cada cenário.
+`presetsExoplanets.mjs`, `presetsLaboratory.mjs`, `presetsMissions.mjs` e
+`presetsAdvanced.mjs`, com construtores comuns em `presetHelpers.mjs`; as
+manobras dos experimentos são calculadas ali a partir das fórmulas de dois
+corpos, de modo que seguem o passo de cada cenário.
+
+Nas missões, os planetas partem dos elementos médios do JPL com suas taxas de
+variação na data de lançamento. Os sobrevoos (Apollo 13, Voyager 2, Galileo,
+Perseverance) foram mirados com o próprio motor: arcos de Lambert entre os
+planetas dão a direção de saída de cada sobrevoo, e um tiro de Newton no plano B
+ajusta o lançamento e as correções de rota. O resultado fica gravado como
+estado inicial e manobras exatas, então a galeria reproduz a trajetória passo a
+passo. Como as posições planetárias são aproximadas, as altitudes e datas dos
+sobrevoos diferem um pouco das reais, e as correções de rota são maiores que as
+da missão; cada descrição informa os valores obtidos.
 
 A API limita cada execução web a 32 corpos, 2.000 partículas em até 8 grupos,
-100 manobras, 20.000 passos, 1.001 amostras, 400.000 posições de partículas
-(amostras × partículas) e cerca de 6 × 10⁸ interações de pares. A CLI aceita
-cenários maiores e exporta os resultados para arquivos.
+100 manobras, 3.000.000 de passos, 1.001 amostras, 400.000 posições de partículas
+(amostras × partículas) e cerca de 6 × 10⁸ interações de pares. Com poucos corpos,
+milhões de passos curtos custam pouco e permitem resolver sobrevoos rápidos ao
+longo de missões de anos; é o limite de interações que mantém cada execução em
+segundos. A CLI aceita cenários maiores e exporta os resultados para arquivos.
 
 ## Resultados da simulação
 
@@ -295,8 +309,11 @@ $$
   termo correspondente no potencial (a energia continua conservada).
 - **Arrasto.** $\mathbf a = -\tfrac12\rho(h)\,(C_dA/m)\,|\mathbf v|\,\mathbf v$
   com $\rho(h)=\rho_0 e^{-h/H}$ e velocidade relativa ao corpo central.
-- **1PN.** Correção de Schwarzschild (gauge harmônico) em torno do corpo central;
-  o periastro avança $6\pi GM/(c^2a(1-e^2))$ por órbita em primeira ordem.
+- **1PN.** Correção de Schwarzschild (gauge harmônico) da órbita relativa de cada
+  corpo em torno do corpo central, com a massa total do par $M = M_c + m$ e
+  repartida entre os dois na proporção das massas: o periastro avança
+  $6\pi GM/(c^2a(1-e^2))$ por órbita em primeira ordem, inclusive para massas
+  comparáveis, como no pulsar binário de Hulse–Taylor.
 - **Reações.** J2, arrasto e 1PN atuam com a reação no corpo central, conservando
   o momento linear. Arrasto e 1PN dependem da velocidade, e os integradores
   deixam de ser simpléticos com eles.
@@ -417,7 +434,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\smoke-api.ps1
 node scripts/verify-presets.mjs
 ```
 
-`verify-presets.mjs` requer a API local em execução e verifica os 100 cenários,
+`verify-presets.mjs` requer a API local em execução e verifica os 125 cenários,
 as amostras, as partículas e os resultados numéricos finitos; a maior deriva de
 energia é calculada só entre os cenários conservativos.
 

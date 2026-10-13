@@ -198,6 +198,11 @@ contains
   ! Adds the central body's J2, exponential-atmosphere drag and 1PN accelerations
   ! on every other active body, with the reaction on the central body so total
   ! linear momentum is conserved. Drag uses drag(j) = Cd A / m in m^2/kg.
+  ! The 1PN term is the test-particle (Schwarzschild, harmonic gauge) acceleration
+  ! of the relative orbit with the pair's total mass, shared between the two
+  ! bodies in proportion to the other one's mass: the relative motion then has
+  ! the 1PN periapsis advance 6 pi G (M + m) / (c^2 a (1 - e^2)) for any mass
+  ! ratio, and reduces to the previous form for a test particle.
   subroutine external_accelerations(n, mass, drag, active, pos, vel, grav, options, acc)
     integer(c_int), intent(in) :: n, active(n)
     real(c_double), intent(in) :: mass(n), drag(n), pos(3,n), vel(3,n), grav
@@ -206,6 +211,7 @@ contains
     integer :: c, j
     real(c_double) :: mu, r(3), v(3), distance, extra(3), z_ratio_squared, factor
     real(c_double) :: density, speed, light_squared, speed_squared, radial_speed
+    real(c_double) :: pair_mu, share, relativistic(3)
 
     c = central_body(n, mass, active, options)
     if (c == 0) return
@@ -235,16 +241,20 @@ contains
         extra = extra - 0.5_c_double * density * drag(j) * speed * v
       end if
 
-      if (light_squared > 0.0_c_double) then
-        speed_squared = sum(v * v)
-        radial_speed = sum(r * v)
-        extra = extra + mu / (light_squared * distance ** 3) * &
-          ((4.0_c_double * mu / distance - speed_squared) * r + &
-           4.0_c_double * radial_speed * v)
-      end if
-
       acc(:,j) = acc(:,j) + extra
       acc(:,c) = acc(:,c) - (mass(j) / mass(c)) * extra
+
+      if (light_squared > 0.0_c_double) then
+        pair_mu = grav * (mass(c) + mass(j))
+        speed_squared = sum(v * v)
+        radial_speed = sum(r * v)
+        relativistic = pair_mu / (light_squared * distance ** 3) * &
+          ((4.0_c_double * pair_mu / distance - speed_squared) * r + &
+           4.0_c_double * radial_speed * v)
+        share = mass(c) / (mass(c) + mass(j))
+        acc(:,j) = acc(:,j) + share * relativistic
+        acc(:,c) = acc(:,c) - (1.0_c_double - share) * relativistic
+      end if
     end do
   end subroutine
 
