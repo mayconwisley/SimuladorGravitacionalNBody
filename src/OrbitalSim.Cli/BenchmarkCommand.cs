@@ -1,6 +1,6 @@
+using OrbitalSim.Infrastructure.Fortran;
 using System.Diagnostics;
 using System.Globalization;
-using OrbitalSim.Infrastructure.Fortran;
 
 namespace OrbitalSim.Cli;
 

@@ -1,10 +1,10 @@
-using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using OrbitalSim.Application;
 using OrbitalSim.Application.DTOs;
 using OrbitalSim.Application.UseCases;
 using OrbitalSim.Domain;
 using OrbitalSim.Infrastructure.Fortran;
+using System.Runtime.InteropServices;
 
 var engine = new FortranOrbitEngine();
 var builder = new BuildScenarioUseCase(engine);
@@ -119,7 +119,11 @@ Check(mapped.Scenario.Config == scenario.Config && mapped.Scenario.Bodies.Sequen
 // Orbit-defined body: circular a = 2 around A (at rest, M = 1, G = 1) -> speed sqrt(1/2).
 BuiltScenario orbiting = builder.Execute(new ScenarioInput
 {
-    Gravity = 1, TimeStepSeconds = 0.01, Steps = 10, SampleEverySteps = 5, Integrator = "yoshida4",
+    Gravity = 1,
+    TimeStepSeconds = 0.01,
+    Steps = 10,
+    SampleEverySteps = 5,
+    Integrator = "yoshida4",
     Bodies =
     [
         new BodyInput { Name = "A", MassKg = 1, PositionMeters = [1, 2, 3], VelocityMetersPerSecond = [0, 0, 0] },
@@ -167,11 +171,24 @@ Check(Math.Abs(backward.Bodies[0].PositionMeters.X + 0.5) < 1e-12 && backward.Ti
     "negative time step integrates backwards");
 
 // Invalid input reaches the user as an argument error in Portuguese.
-Throws<ArgumentException>(() => builder.Execute(new ScenarioInput { Gravity = 1, TimeStepSeconds = 1,
-    Steps = 1, SampleEverySteps = 1, Integrator = "euler", Bodies = input.Bodies }), "unknown integrator");
-Throws<ArgumentException>(() => builder.Execute(new ScenarioInput { Gravity = 1, TimeStepSeconds = 1,
-    Steps = 1, SampleEverySteps = 1, Bodies = [new BodyInput { Name = "X", MassKg = 1,
-        Orbit = new OrbitInput { Around = "Nobody", SemiMajorAxisMeters = 1 } }] }), "orbit around unknown body");
+Throws<ArgumentException>(() => builder.Execute(new ScenarioInput
+{
+    Gravity = 1,
+    TimeStepSeconds = 1,
+    Steps = 1,
+    SampleEverySteps = 1,
+    Integrator = "euler",
+    Bodies = input.Bodies
+}), "unknown integrator");
+Throws<ArgumentException>(() => builder.Execute(new ScenarioInput
+{
+    Gravity = 1,
+    TimeStepSeconds = 1,
+    Steps = 1,
+    SampleEverySteps = 1,
+    Bodies = [new BodyInput { Name = "X", MassKg = 1,
+        Orbit = new OrbitInput { Around = "Nobody", SemiMajorAxisMeters = 1 } }]
+}), "orbit around unknown body");
 Throws<ArgumentException>(() => runner.Execute(scenario with
 {
     Physics = new PhysicsOptions(J2: 1e-3)

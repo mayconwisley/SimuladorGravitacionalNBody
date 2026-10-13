@@ -1,6 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Threading.Channels;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
@@ -9,6 +6,9 @@ using OrbitalSim.Application;
 using OrbitalSim.Application.DTOs;
 using OrbitalSim.Application.UseCases;
 using OrbitalSim.Infrastructure.Fortran;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 1_048_576);

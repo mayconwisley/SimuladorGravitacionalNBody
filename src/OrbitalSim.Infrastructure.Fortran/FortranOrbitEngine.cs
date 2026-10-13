@@ -1,7 +1,7 @@
-using System.Buffers;
 using OrbitalSim.Application.DTOs;
 using OrbitalSim.Application.Interfaces;
 using OrbitalSim.Domain;
+using System.Buffers;
 
 namespace OrbitalSim.Infrastructure.Fortran;
 
