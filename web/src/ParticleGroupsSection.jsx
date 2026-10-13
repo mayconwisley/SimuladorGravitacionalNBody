@@ -1,5 +1,5 @@
 import Icon from './Icons.jsx';
-import { particleColor } from './OrbitCanvas.jsx';
+import { particleAppearance } from './bodyAppearance.mjs';
 import { SelectField, TextField, massiveOptions } from './fields.jsx';
 import { emptyParticleGroup, limits } from './scenario.mjs';
 
@@ -9,7 +9,7 @@ export default function ParticleGroupsSection({ groups, bodies, onChange }) {
   const update = (id, patch) => onChange(groups.map(group => group.id === id ? { ...group, ...patch } : group));
   const total = groups.reduce((sum, group) => sum + (Number(group.count) || 0), 0);
   return <div className="particle-section">
-    {groups.map((group, index) => <article className="group-card" key={group.id} style={{ '--swatch': particleColor(index) }}>
+    {groups.map((group, index) => <article className="group-card" key={group.id} style={{ '--swatch': particleAppearance(group, index).color }}>
       <div className="group-card-header">
         <span className="swatch" />
         <strong>{group.name || 'Grupo'}</strong>

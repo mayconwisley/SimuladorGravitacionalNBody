@@ -123,7 +123,15 @@ página mantém a aba, o rascunho do editor e recalcula a última simulação.
   marcadores de eventos, a repetição automática e as velocidades. Arraste a cena
   para girar, role para aproximar, escolha as vistas 3D/XY/XZ e o referencial
   **Inercial** ou **Girante** (gira com os dois corpos mais massivos e mostra
-  pontos de Lagrange e órbitas em ferradura). Selecione um corpo para ver seus
+  pontos de Lagrange e órbitas em ferradura). A cena é desenhada como seria vista
+  no espaço: planetas e luas conhecidos aparecem no tamanho real quando a massa do
+  cenário é a real (a Terra de 6.371 km sob o satélite a 630 km), com superfície,
+  rotação, fases iluminadas pela estrela mais brilhante, atmosfera, luzes das
+  cidades no lado noturno e os anéis de Saturno; estrelas têm a cor da sua
+  temperatura, cometas mostram caudas de íons e de poeira apontando para longe da
+  estrela, e o céu de fundo (com a Via Láctea) gira com a câmera. Corpos pequenos
+  demais para a escala mantêm um marcador mínimo, e a grade de referência pode ser
+  ligada na barra da cena. Selecione um corpo para ver seus
   elementos orbitais e, no **sandbox**, aplicar um impulso (prógrado, radial,
   normal) ou arrastá-lo para uma nova posição; o motor recalcula a partir daquele
   instante. **Voltar no tempo** integra para trás a partir do instante atual e
@@ -336,6 +344,10 @@ web/src/EventsPanel.jsx                lista de eventos
 web/src/OrbitPanel.jsx                 elementos do corpo selecionado
 web/src/ImpulseForm.jsx                impulso do sandbox
 web/src/OrbitCanvas.jsx                cena 3D, referencial girante, partículas e arraste
+web/src/bodyAppearance.mjs             aparência dos corpos: catálogo real e classificação
+web/src/bodyRenderer.mjs               esferas iluminadas, estrelas, anéis, caudas e naves
+web/src/planetTextures.mjs             superfícies procedurais geradas em fatias
+web/src/skyRenderer.mjs                céu de fundo e Via Láctea
 web/src/Timeline.jsx                   linha do tempo, marcadores, reprodução e atalhos
 web/src/BodyList.jsx                   corpos e grupos de partículas
 web/src/scenario.mjs                   mapeamento e validação do cenário (limites da API)

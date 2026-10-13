@@ -1,5 +1,5 @@
 import Icon from './Icons.jsx';
-import { bodyColor } from './OrbitCanvas.jsx';
+import { trailColor } from './bodyAppearance.mjs';
 import { SelectField, Segmented, TextField, VectorField, massiveOptions } from './fields.jsx';
 import { formatNumber } from './format.mjs';
 
@@ -26,7 +26,7 @@ export default function BodyCard({ item, index, bodies, open, onToggle, onChange
   };
   const updateOrbit = (key, value) => onChange({ orbit: { ...item.orbit, [key]: value } });
   const centrals = massiveOptions(bodies, index);
-  return <article className={`body-card${open ? ' open' : ''}`} style={{ '--swatch': bodyColor(index) }}>
+  return <article className={`body-card${open ? ' open' : ''}`} style={{ '--swatch': trailColor(item.name, Number(item.massKg) || 0, index) }}>
     <div className="body-card-header">
       <button type="button" className="body-card-toggle" aria-expanded={open} onClick={onToggle}>
         <span className="swatch" />

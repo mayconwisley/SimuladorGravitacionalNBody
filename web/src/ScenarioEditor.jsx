@@ -5,7 +5,7 @@ import BodyCard from './BodyCard.jsx';
 import PhysicsSection from './PhysicsSection.jsx';
 import ParticleGroupsSection from './ParticleGroupsSection.jsx';
 import ManeuversSection from './ManeuversSection.jsx';
-import { bodyColor } from './OrbitCanvas.jsx';
+import { trailColor } from './bodyAppearance.mjs';
 import { Segmented, TextField } from './fields.jsx';
 import { emptyBody, estimatePairEvaluations, fromScenario, integrators, limits, presetDraft, presets,
   toScenario } from './scenario.mjs';
@@ -177,7 +177,7 @@ export default function ScenarioEditor({ draft, setDraft, onRun, onBrowse, busy,
           <p className="validation ok"><Icon name="target" size={14} /> Pronto para executar.</p>
         </>}
         <ul className="body-chips">{draft.bodies.slice(0, 12).map((item, index) =>
-          <li key={item.id}><span className="swatch" style={{ '--swatch': bodyColor(index) }} />{item.name || 'Sem nome'}</li>)}
+          <li key={item.id}><span className="swatch" style={{ '--swatch': trailColor(item.name, Number(item.massKg) || 0, index) }} />{item.name || 'Sem nome'}</li>)}
           {draft.bodies.length > 12 && <li className="muted">+{draft.bodies.length - 12}</li>}
         </ul>
         <p className="panel-note">O motor calcula a atração entre todos os pares de corpos com massa; partículas só

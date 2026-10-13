@@ -108,6 +108,12 @@ app.MapPost("/api/simulations/stream", (HttpContext context, ScenarioInput reque
             await foreach (StreamMessage message in channel.Reader.ReadAllAsync(cancellation))
                 await WriteLine(stream, message, options, cancellation);
         }
+        catch (Exception exception) when (context.RequestAborted.IsCancellationRequested &&
+                                          exception is OperationCanceledException or IOException)
+        {
+            // The client closed the connection (new run, cancel or page left): nobody reads the
+            // rest, so stopping here is the normal end of the stream, not an error.
+        }
         finally
         {
             await stop.CancelAsync();
