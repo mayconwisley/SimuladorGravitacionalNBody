@@ -14,6 +14,7 @@ import useEngineStatus from './useEngineStatus.js';
 import usePlayback from './usePlayback.js';
 import SiteFooter from './SiteFooter.jsx';
 import Manual from './Manual.jsx';
+import ScenarioSummary from './ScenarioSummary.jsx';
 import { fromScenario, integrators, limits, presetDraft, presets, toScenario } from './scenario.mjs';
 import { appendSamples, createDataset, energyDriftFromSamples, suggestedTimeStep } from './dataset.mjs';
 import { runSimulation, streamSimulation } from './simulationClient.mjs';
@@ -61,6 +62,8 @@ export default function App() {
   const [focus, setFocus] = useState(null);
   const [busy, setBusy] = useState(false);
   const [runningKey, setRunningKey] = useState(null);
+  // Gallery scenario shown in the results (kept across sandbox edits and time reversal).
+  const [presetKey, setPresetKey] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [emptyNotice, setEmptyNotice] = useState('');
@@ -105,13 +108,13 @@ export default function App() {
     if (restoreAttempted.current || tab !== 'results' || dataset) return;
     restoreAttempted.current = true;
     const last = loadLastRun();
-    if (last?.scenario) execute(last.scenario, last.label, { view: last.view, fit: last.fit ?? null });
+    if (last?.scenario) execute(last.scenario, last.label, { view: last.view, fit: last.fit ?? null, presetKey: last.presetKey ?? null });
     else if (last) setEmptyNotice(importedNotice);
   }, [tab, dataset]);
 
   const go = key => navigate(pathForTab(key));
 
-  async function execute(scenario, label, { presetKey = null, view: preferred = 'inertial', fit: framed = null, compare = false,
+  async function execute(scenario, label, { presetKey: shownPreset = null, view: preferred = 'inertial', fit: framed = null, compare = false,
     keepFocus = false, seekTo = null, reversalOf = null } = {}) {
     abort.current?.abort();
     compareAbort.current?.abort();
@@ -122,7 +125,7 @@ export default function App() {
     let pendingFrame = 0;
     const commit = () => { pendingFrame = 0; if (!controller.signal.aborted) setDataset(current); };
     const flush = () => { if (pendingFrame) cancelAnimationFrame(pendingFrame); commit(); };
-    setError(''); setNotice(''); setEmptyNotice(''); setBusy(true); setRunningKey(presetKey);
+    setError(''); setNotice(''); setEmptyNotice(''); setBusy(true); setRunningKey(shownPreset); setPresetKey(shownPreset);
     setComparison(null); setReversal(reversalOf); setView(preferred); setFit(framed);
     if (!keepFocus) setFocus(null);
     playback.reset();
@@ -144,7 +147,7 @@ export default function App() {
       });
       current = { ...current, complete: true };
       flush();
-      saveLastRun({ label, scenario, view: preferred, ...(framed && { fit: framed }) });
+      saveLastRun({ label, scenario, view: preferred, ...(framed && { fit: framed }), ...(shownPreset && { presetKey: shownPreset }) });
       if (compare) compareIntegrators(scenario);
     } catch (cause) {
       if (pendingFrame) cancelAnimationFrame(pendingFrame);
@@ -212,7 +215,7 @@ export default function App() {
     try {
       const next = withManeuver(dataset.scenario, { ...maneuver, step: frame.step });
       setDraft(fromScenario(next));
-      execute(next, source, { view, fit, keepFocus: true, seekTo: playback.index });
+      execute(next, source, { view, fit, presetKey, keepFocus: true, seekTo: playback.index });
     } catch (cause) { setError(cause.message); }
   }
 
@@ -220,7 +223,7 @@ export default function App() {
     try {
       const { scenario, truncated } = withSuggestedStep(dataset.scenario, suggestedTimeStep(dataset));
       setDraft(fromScenario(scenario));
-      execute(scenario, source, { view, fit, keepFocus: true });
+      execute(scenario, source, { view, fit, presetKey, keepFocus: true });
       if (truncated) setNotice(`Com o Δt sugerido, o limite de ${limits.steps.toLocaleString('pt-BR')} passos encurta a duração simulada.`);
     } catch (cause) { setError(cause.message); }
   }
@@ -250,7 +253,7 @@ export default function App() {
     const origin = dataset.frames[0];
     const extent = Math.max(...[...origin.bodies.values()].map(item => Math.hypot(item.x - origin.center.x,
       item.y - origin.center.y, item.z - origin.center.z)), 1);
-    execute(next, `${source.replace(/ · tempo reverso$/, '')} · tempo reverso`, { view, fit,
+    execute(next, `${source.replace(/ · tempo reverso$/, '')} · tempo reverso`, { view, fit, presetKey,
       reversalOf: { origin: new Map([...origin.bodies].map(([name, item]) => [name, item])), extent } });
   }
 
@@ -261,7 +264,7 @@ export default function App() {
       const imported = await datasetFromFiles(event.target.files);
       saveLastRun({ label: 'Dados importados', scenario: null });
       setDataset(imported); setSource('Dados importados'); setFocus(null); setComparison(null);
-      setReversal(null); setView('inertial'); setFit(null); setEmptyNotice(''); setError(''); setNotice('');
+      setReversal(null); setView('inertial'); setFit(null); setPresetKey(null); setEmptyNotice(''); setError(''); setNotice('');
       playback.reset();
       if (location.pathname !== pathForTab('results')) go('results');
     } catch (cause) { setError(cause.message); }
@@ -314,7 +317,7 @@ export default function App() {
           {canReverse && <button className="button subtle small" type="button" onClick={reverseTime}
             title="Integra para trás a partir deste instante; o sistema deve voltar ao estado inicial">
             <Icon name="rewind" size={14} /> Voltar no tempo</button>}
-          {source && <span className="scenario-pill"><Icon name="orbit" size={14} />{source}</span>}
+          <ScenarioSummary source={source} presetKey={presetKey} />
         </div>}
       </div>}
 

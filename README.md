@@ -350,6 +350,8 @@ tests/OrbitalSim.IntegrationTests/     testes .NET e interoperabilidade
 examples/                              cenários prontos
 benchmarks/                            metodologia do benchmark
 web/src/ScenarioEditor.jsx             orquestração do editor e resumo validado
+web/src/ScenarioSummary.jsx            resumo do cenário em execução na página de resultados
+web/src/presetSummaries.mjs            resumos de 3 a 4 linhas de cada cenário da galeria
 web/src/Manual.jsx                     manual de uso para o público da interface
 web/src/BodyCard.jsx                   corpo por vetores ou elementos orbitais
 web/src/PhysicsSection.jsx             J2, atmosfera, relatividade e colisões

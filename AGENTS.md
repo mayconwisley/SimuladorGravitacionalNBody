@@ -18,7 +18,9 @@ layout or workflow changes.
 Ready-to-run educational scenarios live in `web/src/presets.mjs` and the
 `web/src/presets*.mjs` modules it combines (shared builders in
 `presetHelpers.mjs`); keep them in SI units, with unique labels, and within the
-API's body, particle, step, sample, and work limits.
+API's body, particle, step, sample, and work limits. Every preset also needs a
+three- to four-line summary in `web/src/presetSummaries.mjs`, shown on the
+results page.
 
 ## Build and test
 

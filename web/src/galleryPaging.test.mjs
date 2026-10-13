@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { filterPresets, pageWindow, paginate } from './galleryPaging.mjs';
 import { presets } from './scenario.mjs';
+import { presetSummaries } from './presetSummaries.mjs';
 
 const entries = Object.entries(presets);
 
@@ -43,4 +44,12 @@ test('janela de páginas com reticências para muitas páginas', () => {
   assert.deepEqual(pageWindow(2, 4), [1, 2, 3, 4]);
   assert.deepEqual(pageWindow(6, 12), [1, null, 5, 6, 7, null, 12]);
   assert.deepEqual(pageWindow(1, 12), [1, 2, null, 12]);
+});
+
+test('cada cenário tem um resumo de 3 a 4 linhas para a página de resultados', () => {
+  assert.deepEqual(Object.keys(presetSummaries).sort(), entries.map(([key]) => key).sort());
+  for (const [key, text] of Object.entries(presetSummaries)) {
+    assert.ok(text.length >= 200 && text.length <= 420, `${key}: ${text.length} caracteres`);
+    assert.notEqual(text, presets[key].description, key);
+  }
 });
